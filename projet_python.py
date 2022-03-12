@@ -33,25 +33,26 @@ for filename in os.listdir(base_path):
     if file_extension == ImageExtension.PNG.value:
         multiplicateur = 255
     img = (mplimg.imread(base_path + filename).copy() * multiplicateur).astype(np.uint8)
+    img_resize = functions.image_resize(img, height=800)
 
     # Affichage
     plt.figure()
     plt.title(f"{filename} originale")
-    plt.imshow(img)
+    plt.imshow(img_resize, cmap=plt.cm.gray)
     plt.show()
 
     # Detection des pièces
-    img_result, nb_pieces = functions.detection_de_pieces(img)
+    img_result, nb_pieces = functions.detection_de_pieces(img_resize)
     print(f"Pièce(s) détectée(s) : {nb_pieces}")
 
     plt.figure()
     plt.title(f"{filename} après détection")
-    plt.imshow(img_result)
+    plt.imshow(img_result, cmap=plt.cm.gray)
     plt.show()
 
     # Interprétation du côté de la piece et de sa valeur
     # TODO: à compléter
 
-    break  # TODO: break temporaire pour tester la 1ère image
+    # break  # TODO: break temporaire pour tester la 1ère image
 
 print("Fin de la détection !")
