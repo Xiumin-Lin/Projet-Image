@@ -1,18 +1,27 @@
+import json
 import os.path
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 
 
 def conversion_en_gris(img):
-    # TODO
-    print("Do Conversion en gris")
-    img_gris = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # print("DO Conversion en gris")  # [LOG]
+    # img_gris = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_gris = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            # img value convert to int prevent the error : "overflow encountered in ubyte_scalars"
+            gray_value = (int(img[i][j][0]) + int(img[i][j][1]) + int(img[i][j][2])) / 3
+            for k in range(3):
+                img_gris[i, j] = gray_value
+
     return img_gris
 
 
 def historigramme(img):
-    print("DO Historigramme")
+    # print("DO Historigramme")  # [LOG]
     histogram = np.zeros(256, dtype=np.uint8)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
@@ -22,7 +31,7 @@ def historigramme(img):
 
 
 def histo_cumule(histo):
-    print("DO Historigramme cumulée")
+    # print("DO Historigramme cumulée")  # [LOG]
     h_cumul = np.zeros(len(histo))
     cumul = 0
     for i in range(len(histo)):
@@ -33,7 +42,7 @@ def histo_cumule(histo):
 
 # Egaliser
 def egaliser(img, historigrame):
-    print("DO Egaliser")
+    # print("DO Egaliser")  # [LOG]
     h_cumule, cumul = histo_cumule(historigrame)
     img_egalise = np.zeros(img.shape, dtype=np.uint8)
     n = len(historigrame)
@@ -48,60 +57,73 @@ def egaliser(img, historigrame):
     return img_egalise
 
 
-# Convolution avec un noyau à 1 dimension
-def convolution_1d(img, noyau):
-    # TODO
-    print("DO Convolution 1D")
-    convolve_1d = img
-    return convolve_1d
-
-
 # Convolution avec un noyau à 2 dimensions
 def convolution_2d(img, noyau):
-    # TODO
-    print("DO Convolution 2D")
-    convolve_2d = img
-    return convolve_2d
+    # print("DO Convolution 2D")  # [LOG]
+
+    # convolve_2d = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
+    # if (len(noyau) != len(noyau[1])) or (len(noyau) % 2 == 0):
+    #     return convolve_2d
+    # centrenoyau = int((len(noyau) - 1) / 2)
+    # moyennenoyau = 0
+
+    img_convolve_2d = cv2.filter2D(img, ddepth=-1, kernel=noyau)
+    return img_convolve_2d
 
 
 def filtre_moyenneur(img):
-    # TODO
-    print("DO Filtre_moyenneur")
-    img_moyenneur = img
+    # print("DO Filtre_moyenneur")  # [LOG]
+    moy_kernel_5x5 = np.ones((5, 5), np.uint8) / 25
+    img_moyenneur = convolution_2d(img, moy_kernel_5x5)
     return img_moyenneur
 
 
 def filtre_median(img):
     # TODO
-    print("DO Filtre_median")
-    img_median = img
+    # print("DO Filtre_median")  # [LOG]
+    img_median = cv2.medianBlur(img, ksize=3)
     return img_median
 
 
 def filtre_gaussian(img):
-    # TODO
-    print("DO Filtre_gaussian")
-    return cv2.GaussianBlur(img, (17, 17), 0)
+    # print("DO Filtre_gaussian")  # [LOG]
+    # gaus_kernel_3x3 = np.asarray([[1, 2, 1],
+    #                               [2, 3, 2],
+    #                               [1, 2, 1], ], dtype=np.uint8) / 16
+    #
+    # gaus_kernel_5x5 = np.asarray([[1, 4, 5, 4, 1],
+    #                               [4, 16, 26, 16, 4],
+    #                               [7, 26, 41, 26, 7],
+    #                               [4, 16, 26, 16, 4],
+    #                               [1, 4, 5, 4, 1]], dtype=np.uint8) / 273
+
+    # img_gaussien = convolution_2d(img, gaus_kernel_5x5)
+    img_gaussien = cv2.GaussianBlur(img, (17, 17), 0)
+    return img_gaussien
 
 
 def dilatation(img):
     # TODO
-    print("DO Dilatation")
-    noyau = np.ones((5, 5), np.uint8)
-    img_dilate = cv2.dilate(img, noyau, iterations=2)
+    # print("DO Dilatation")  # [LOG]
+    elem_struct = np.ones((3, 3), np.uint8)
+    img_dilate = cv2.dilate(img, elem_struct, iterations=3)
+    return img_dilate
+
+
+def erosion(img):
+    # TODO
+    # print("DO Erosion")  # [LOG]
+    elem_struct = np.ones((3, 3), np.uint8)
+    img_dilate = cv2.erode(img, elem_struct, iterations=1)
     return img_dilate
 
 
 # Seuillage automatique : Méthode Otsu (version du prof)
 def otsu(img):
-    print("Use otsu : ")
+    # print("Use otsu : ")  # [LOG]
     meilleur_seuil = 0
     minimun = 10_000_000_000
     histogram = historigramme(img)
-
-    # Affichage de l'historigramme
-    # for i in range(len(histogram)):
-    #     print(i, " : ", histogram[i])
 
     for seuil in range(256):
         w1 = 0
@@ -135,33 +157,31 @@ def otsu(img):
         if intra_class_var < minimun:
             meilleur_seuil = seuil
             minimun = intra_class_var
-            # print(f"Nouveau meilleur seuil : {seuil}")
 
-    print(f"Le meilleur seuil est {meilleur_seuil}")
+    # print(f"Le meilleur seuil est {meilleur_seuil}")  # [LOG]
     return meilleur_seuil
 
 
 def seuillage(img, seuil):
-    # TODO
-    print("DO Seuillage")
-    return img
+    # print("DO Seuillage")  # [LOG]
+    img_seuil = np.zeros(img.shape, dtype=np.uint8)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i, j] >= seuil:
+                img_seuil[i, j] = 1
+    return img_seuil
 
 
 def filtre_sobel(img):
     # TODO
-    print("DO Filtre_sobel")
-    return img
-
-
-def filtre_kirsh(img):
-    # TODO
-    print("DO Filtre_kirsh")
-    return img
+    # print("DO Filtre_sobel")  # [LOG]
+    img_sobel = cv2.Sobel(img, ddepth=-1, dx=1, dy=1, ksize=1)
+    return img_sobel
 
 
 def algo_canny(img):
     # TODO
-    print("DO Algo_canny")
+    # print("DO Algo_canny")  # [LOG]
     # 1. Réduction de bruit (Filtre Gaussian, sa taille est importante)
     # 2. Gradient d'intensité
     # 3. Suppression des non-maxima
@@ -173,7 +193,7 @@ def algo_canny(img):
 
 def compter_pieces(img):
     # TODO : Faire notre propre detection de cercle
-    print("DO Compter_pieces")
+    # print("DO Compter_pieces")  # [LOG]
     (contours_piece, _) = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     return len(contours_piece), contours_piece
@@ -182,68 +202,71 @@ def compter_pieces(img):
 def detection_de_pieces(img):
     # TODO 1. Convertir l'image en gris
     img_gris = conversion_en_gris(img)
-
-    # plt.figure()
-    # plt.title("Gris")
-    # plt.imshow(img_gris, cmap=plt.cm.gray)
-    # plt.show()
+    # show_img(img_gris, "Gris")  # [LOG]
+    show_img(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), "Gris by cv2")  # [LOG]
 
     # TODO 2. Si historigramme de l'img est trop sombre ou trop clair, on égalise
     # L'égalisation n'aide pas vraiment :/
     # img_histo = historigramme(img_gris)
     # img_egalise = egaliser(img_gris, img_histo)
-
-    # plt.figure()
-    # plt.title("Egalisé")
-    # plt.imshow(img_egalise, cmap=plt.cm.gray)
-    # plt.show()
+    # show_img(img_egalise, "Egalisé")  # [LOG]
 
     # TODO 3. Réduire les bruits avec un lissage de l'image
     # 3.a. Filtre Moyenneur
     # img_lisse = filtre_moyenneur(img_egalise)
     # 3.b. Filtre Median
-    # img_lisse = filtre_moyenneur(img_egalise)
+    # img_median = filtre_median(img_gris)
     # 3.c. Filtre Gaussian
     img_lisse = filtre_gaussian(img_gris)
-
-    # plt.figure()
-    # plt.title("Lissage")
-    # plt.imshow(img_lisse, cmap=plt.cm.gray)
-    # plt.show()
+    show_img(img_lisse, "Lissage avec filtre gaussien")  # [LOG]
 
     # TODO 4. Trouver le seuil adéquat et l'appliquer
     # meilleur_seuil = otsu(img_lisse)
     # img_binaire = seuillage(img_lisse, meilleur_seuil)
-    # TODO 5. Si les contours ne sont pas assez gros, le dilater
-    img_dilate = dilatation(img_lisse)
-    #
-    # plt.figure()
-    # plt.title("Dilate")
-    # plt.imshow(img_dilate, cmap=plt.cm.gray)
-    # plt.show()
 
-    # TODO 6. Detection de contour
-    # 4.a Filtre de Sobel
+    # TODO 5. Detection de contour
+    # 5.a Filtre de Sobel
     # img_result = filtre_sobel(img_dilate)
-    # 4.b Filtre de Kirsh
-    # img_result = filtre_kirsh(img_dilate)
-    # 4.c Algo de canny (le 3. et 4. est compris dedans)
-    img_result = algo_canny(img_dilate)
+    # 5.b Algo de Canny (le 3. et 4. est compris dedans)
+    img_canny = algo_canny(img_lisse)
+    show_img(img_canny, "Canny")  # [LOG]
+    # TODO 6. Si les contours ne sont pas assez gros, le dilater
+    img_dilate = dilatation(img_canny)
+    show_img(img_dilate, "Dilaté")  # [LOG]
 
-    # plt.figure()
-    # plt.title("Canny")
-    # plt.imshow(img_result, cmap=plt.cm.gray)
-    # plt.show()
+    img_result = img_dilate
 
     # TODO 7. Compter les pieces
     nb_pieces, contours = compter_pieces(img_result)
 
-    # Affichage des contours détectées
+    # Affichage des contours détectées  # [LOG]
     cv2.drawContours(img, contours, -1, (0, 255, 0), 2)
     cv2.imshow("Result", img)
     cv2.waitKey(0)
 
     return img_result, nb_pieces
+
+
+def show_img(img, img_title):
+    plt.figure()
+    plt.title(img_title)
+    plt.imshow(img, cmap=plt.cm.gray)
+    plt.show()
+
+
+def load_jsonfile(json_path):
+    debut_label_piece = "piece de "
+    file = open(json_path)
+    data = json.load(file)
+    liste_pieces = []  # liste contenant les infos sur chaque pièces de monnaie de l'image
+    liste_autres = []  # les choses qui ne sont pas des pièces de monnaie
+    for shape in data["shapes"]:
+        if shape["label"].startswith(debut_label_piece):
+            liste_pieces.append({"label": shape["label"], "points": shape["points"]})
+        else:
+            liste_autres.append({"label": shape["label"], "points": shape["points"]})
+    util_data = {'pieces': liste_pieces, 'autres': liste_autres}
+    return util_data
 
 
 def get_file(prefix):
