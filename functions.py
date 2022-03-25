@@ -60,13 +60,6 @@ def egaliser(img, historigrame):
 # Convolution avec un noyau à 2 dimensions
 def convolution_2d(img, noyau):
     # print("DO Convolution 2D")  # [LOG]
-
-    # convolve_2d = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
-    # if (len(noyau) != len(noyau[1])) or (len(noyau) % 2 == 0):
-    #     return convolve_2d
-    # centrenoyau = int((len(noyau) - 1) / 2)
-    # moyennenoyau = 0
-
     img_convolve_2d = cv2.filter2D(img, ddepth=-1, kernel=noyau)
     return img_convolve_2d
 
@@ -182,10 +175,6 @@ def filtre_sobel(img):
 def algo_canny(img):
     # TODO
     # print("DO Algo_canny")  # [LOG]
-    # 1. Réduction de bruit (Filtre Gaussian, sa taille est importante)
-    # 2. Gradient d'intensité
-    # 3. Suppression des non-maxima
-    # 4. Seuillage des contours (2 seuils)
     meilleur_seuil = otsu(img)
     img_contour = cv2.Canny(img, 30, meilleur_seuil)
     return img_contour
@@ -202,8 +191,8 @@ def compter_pieces(img):
 def detection_de_pieces(img):
     # TODO 1. Convertir l'image en gris
     img_gris = conversion_en_gris(img)
-    # show_img(img_gris, "Gris")  # [LOG]
-    show_img(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), "Gris by cv2")  # [LOG]
+    show_img(img_gris, "Gris")  # [LOG]
+    # show_img(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), "Gris by cv2")  # [LOG]
 
     # TODO 2. Si historigramme de l'img est trop sombre ou trop clair, on égalise
     # L'égalisation n'aide pas vraiment :/
@@ -324,3 +313,39 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
 
     # return the resized image
     return resized
+
+
+def convolution_diy(img, noyau):
+    img_convolve = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
+
+    if (len(noyau) != len(noyau[1])) or (len(noyau) % 2 == 0):
+        return img_convolve
+    centre_noyau = int((len(noyau) - 1) / 2)
+    moy_noyau = 0
+
+    for i in noyau:
+        for j in i:
+            moy_noyau += abs(j)
+    print(moy_noyau)
+    for pixelLine in range(len(img_convolve) - 1):
+        for pixel in range(len(img_convolve[pixelLine]) - 1):
+            r = v = b = ie = 0
+            for ligneN in range(len(noyau) - 1):
+                for numLigneN in range(len(noyau[ligneN]) - 1):
+                    if (
+                            not (((pixel - (numLigneN - centre_noyau)) < 0) or (
+                                    (pixelLine - (ligneN - centre_noyau)) < 0))):
+                        print(f"convolution de pixel {pixelLine}:{pixel}, "
+                              f"{(pixel-(ligneN - centre_noyau))}:{(pixelLine-(ligneN - centre_noyau))}")
+                        e = img[pixelLine - (ligneN - centre_noyau)][pixel - (numLigneN - centre_noyau)]
+                        ie += ((e[0] + e[1] + e[2]) / 3) * noyau[ligneN][numLigneN]
+                        r += e[0] * noyau[ligneN][numLigneN]
+                        v += e[1] * noyau[ligneN][numLigneN]
+                        b += e[2] * noyau[ligneN][numLigneN]
+                    else:
+                        print(f"pixel skippé: {pixelLine}{pixel}")
+            r = r / moy_noyau
+            v = v / moy_noyau
+            b = b / moy_noyau
+            img_convolve[pixelLine][pixel] = [ie, ie, ie]
+    return img_convolve

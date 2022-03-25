@@ -57,7 +57,7 @@ for file in os.listdir(base_path):
     if nb_pieces_trouve == nb_pieces_reelles:
         traitement_reussite += 1
 
-    pourcentage = "Erreur" if nb_pieces_reelles == 0 else nb_pieces_trouve / nb_pieces_reelles * 100
+    pourcentage = "None" if nb_pieces_reelles == 0 else nb_pieces_trouve / nb_pieces_reelles * 100
     print(f"Traitement {file} : Nombre de pièce(s) détectée(s) : " +
           f"{nb_pieces_trouve} sur {nb_pieces_reelles} ({pourcentage}%)")
 
