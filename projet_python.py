@@ -63,10 +63,8 @@ for file in os.listdir(base_path):
 
     functions.show_img(img_result, file + " après détection")  # [LOG]
 
-    # Interprétation du côté de la piece et de sa valeur
-    # TODO: à compléter
 
-    # break  # TODO: break temporaire pour tester la 1ère image
+
 
 pourcentage_final = traitement_reussite / nb_image_total * 100
 print(f"Résulat des analyses dans {base_path} : {traitement_reussite} / {nb_image_total}")
