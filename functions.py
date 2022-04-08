@@ -2,7 +2,6 @@ import json
 import os.path
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -13,11 +12,12 @@ def conversion_en_gris(img):
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
             # img value convert to int prevent the error : "overflow encountered in ubyte_scalars"
-            gray_value = (int(img[i][j][0]) + int(img[i][j][1]) + int(img[i][j][2])) / 3
+            gray_value = int((int(img[i][j][0]) + int(img[i][j][1]) + int(img[i][j][2])) / 3)
             for k in range(3):
                 img_gris[i, j] = gray_value
 
     return img_gris
+
 
 def historigramme(img):
     # print("DO Historigramme")  # [LOG]
@@ -28,6 +28,7 @@ def historigramme(img):
 
     return histogram
 
+
 def histo_cumule(histo):
     # print("DO Historigramme cumulée")  # [LOG]
     h_cumul = np.zeros(len(histo))
@@ -36,6 +37,7 @@ def histo_cumule(histo):
         cumul += histo[i]
         h_cumul[i] = cumul
     return h_cumul, cumul
+
 
 # Egaliser
 def egaliser(img, historigrame):
@@ -53,11 +55,13 @@ def egaliser(img, historigrame):
                 img_egalise[i][j] = 0
     return img_egalise
 
+
 # Convolution avec un noyau à 2 dimensions
 def convolution_2d(img, noyau):
     # print("DO Convolution 2D")  # [LOG]
     img_convolve_2d = cv2.filter2D(img, ddepth=-1, kernel=noyau)
     return img_convolve_2d
+
 
 def filtre_moyenneur(img):
     # print("DO Filtre_moyenneur")  # [LOG]
@@ -65,13 +69,15 @@ def filtre_moyenneur(img):
     img_moyenneur = convolution_2d(img, moy_kernel_5x5)
     return img_moyenneur
 
-def filtre_median(img, size = 3):
+
+def filtre_median(img, size=3):
     # TODO
     # print("DO Filtre_median")  # [LOG]
     img_median = cv2.medianBlur(img, ksize=size)
     return img_median
 
-def filtre_gaussian(img, size = 17):
+
+def filtre_gaussian(img, size=17):
     # print("DO Filtre_gaussian")  # [LOG]
     # gaus_kernel_3x3 = np.asarray([[1, 2, 1],
     #                               [2, 3, 2],
@@ -87,6 +93,7 @@ def filtre_gaussian(img, size = 17):
     img_gaussien = cv2.GaussianBlur(img, (size, size), 0)
     return img_gaussien
 
+
 def dilatation(img):
     # TODO
     # print("DO Dilatation")  # [LOG]
@@ -94,12 +101,14 @@ def dilatation(img):
     img_dilate = cv2.dilate(img, elem_struct, iterations=3)
     return img_dilate
 
+
 def erosion(img):
     # TODO
     # print("DO Erosion")  # [LOG]
     elem_struct = np.ones((3, 3), np.uint8)
     img_dilate = cv2.erode(img, elem_struct, iterations=1)
     return img_dilate
+
 
 # Seuillage automatique : Méthode Otsu (version du prof)
 def otsu(img):
@@ -161,6 +170,7 @@ def filtre_sobel(img):
     img_sobel = cv2.Sobel(img, ddepth=-1, dx=1, dy=1, ksize=1)
     return img_sobel
 
+
 def algo_canny(img):
     # TODO
     # print("DO Algo_canny")  # [LOG]
@@ -196,7 +206,7 @@ def detection_de_pieces(img):
     # img_median = filtre_median(img_gris)
     # 3.c. Filtre Gaussian
 
-    #img_lisse = filtre_gaussian(img_gris)
+    # img_lisse = filtre_gaussian(img_gris)
     img_lisse = filtre_median(img_gris, 9)
 
     show_img(img_lisse, "Lissage avec filtre gaussien")  # [LOG]
@@ -204,7 +214,7 @@ def detection_de_pieces(img):
     # TODO 4. Trouver le seuil adéquat et l'appliquer
     # meilleur_seuil = otsu(img_lisse)
     # img_binaire = seuillage(img_lisse, meilleur_seuil)
-    #ancien code 
+    # ancien code
     """# TODO 5. Detection de contour
     # 5.a Filtre de Sobel
     # img_result = filtre_sobel(img_dilate)
@@ -212,20 +222,20 @@ def detection_de_pieces(img):
     img_canny = algo_canny(img_lisse)
     show_img(img_canny, "Canny")  # [LOG]"""
     img_canny = img_lisse
-    
+
     # TODO 5.5 HOUGH_CIRCLE
-    img_canny = cv2.morphologyEx(img_canny , cv2.MORPH_OPEN, np.ones((15,15),np.uint8))
+    img_canny = cv2.morphologyEx(img_canny, cv2.MORPH_OPEN, np.ones((15, 15), np.uint8))
     rows = img_canny.shape[0]
     img_circles = cv2.HoughCircles(img_canny, cv2.HOUGH_GRADIENT, 1, rows / 8,
-                               param1=100, param2=30,
-                               minRadius=1, maxRadius=1000)
+                                   param1=100, param2=30,
+                                   minRadius=1, maxRadius=1000)
 
     if img_circles is not None:
         img_circles = np.uint16(np.around(img_circles))
         print(img_circles)
         for i in img_circles[0, :]:
             center = (i[0], i[1])
-                # circle center
+            # circle center
             cv2.circle(img_canny, center, 1, (0, 100, 100), 3)
             # circle outline
             radius = i[2]
@@ -233,9 +243,9 @@ def detection_de_pieces(img):
     else:
         img_out = img_canny
         img_circles = [[]]
-    #show_img(img_out, "HOUGH")
+    # show_img(img_out, "HOUGH")
 
-     # TODO 6. Si les contours ne sont pas assez gros, le dilater
+    # TODO 6. Si les contours ne sont pas assez gros, le dilater
     img_dilate = dilatation(img_canny)
     show_img(img_dilate, "Dilaté")  # [LOG]
     cv2.imshow("dilat", img_dilate)
@@ -246,9 +256,8 @@ def detection_de_pieces(img):
 
     # Affichage des contours détectées  # [LOG]
     cv2.drawContours(img, contours, -1, (0, 255, 0), 2)
-    #cv2.imshow("Result", img)
+    # cv2.imshow("Result", img)
     cv2.waitKey(0)
-    
 
     nb_circle = len(img_circles[0])
     if nb_circle > 10:
@@ -262,6 +271,7 @@ def show_img(img, img_title):
     plt.imshow(img, cmap=plt.cm.gray)
     plt.show()"""
 
+
 def load_jsonfile(json_path):
     debut_label_piece = "piece de "
     file = open(json_path)
@@ -270,11 +280,35 @@ def load_jsonfile(json_path):
     liste_autres = []  # les choses qui ne sont pas des pièces de monnaie
     for shape in data["shapes"]:
         if shape["label"].startswith(debut_label_piece):
-            liste_pieces.append({"label": shape["label"], "points": shape["points"]})
+            liste_pieces.append({"label": shape["label"], "points": shape["points"], "shape_type": shape["shape_type"]})
         else:
             liste_autres.append({"label": shape["label"], "points": shape["points"]})
     util_data = {'pieces': liste_pieces, 'autres': liste_autres}
     return util_data
+
+
+def create_validation_image(img, json_data):
+    img_copy = np.zeros(img.shape, dtype=np.uint8)
+    print(img.shape)
+    for piece in json_data["pieces"]:
+        if piece["shape_type"] == "circle":
+            brut_center = piece["points"][0]
+            brut_cercle_pt = piece["points"][1]
+
+            center = (int(brut_center[0]), int(brut_center[1]))
+            cercle_pt = (int(brut_cercle_pt[0]), int(brut_cercle_pt[1]))
+
+            rayon = int(np.sqrt((center[0] - cercle_pt[0])**2 + (center[1] - cercle_pt[1])**2))
+            cv2.circle(img_copy, center, rayon, (255, 255, 255), -10)
+        elif piece["shape_type"] == "polygon":
+            list_pts = []
+            for points in piece["points"]:
+                list_pts.append([int(points[0]), int(points[1])])
+            pts = np.array([list_pts], np.int32)
+            cv2.polylines(img_copy, [pts], True, (255, 255, 255), 10)
+
+    return img_copy
+
 
 def get_file(prefix):
     # multiplicateur = 1 pour afficher une img .jpeg ou jpg dans sa couleur d'origine
@@ -297,6 +331,7 @@ def get_file(prefix):
               + " .jpg, .jpeg ou .png, utilisez le program avec '-help' pour un detail d'utilisation")
         exit()
     return filename, multiplicateur
+
 
 # Fonction pour redimension d'une image sans perdre son allure d'origine
 # Source : https://stackoverflow.com/questions/44650888/resize-an-image-without-distortion-opencv
@@ -331,15 +366,15 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     # return the resized image
     return resized
 
-def convolution_diy(img, noyau):
 
+def convolution_diy(img, noyau):
     img_convolve = np.zeros((img.shape[0], img.shape[1], 1), dtype=np.uint8)
 
-    #Test que le noyeau est de (n x n) avec n impair
+    # Test que le noyeau est de (n x n) avec n impair
     if (len(noyau) != len(noyau[1])) or (len(noyau) % 2 == 0):
         return img_convolve
-    
-    #normalisation du noyeau
+
+    # normalisation du noyeau
     centre_noyau = int((len(noyau) - 1) / 2)
     moy_noyau = 0
 
@@ -354,11 +389,11 @@ def convolution_diy(img, noyau):
             for ligneN in range(len(noyau) - 1):
                 for numLigneN in range(len(noyau[ligneN]) - 1):
                     if (not (((pixel - (numLigneN - centre_noyau)) < 0) or (
-                                    (pixelLine - (ligneN - centre_noyau)) < 0))):
+                            (pixelLine - (ligneN - centre_noyau)) < 0))):
                         print(f"convolution de pixel {pixelLine}:{pixel}, "
-                              f"{(pixel-(ligneN - centre_noyau))}:{(pixelLine-(ligneN - centre_noyau))}")
+                              f"{(pixel - (ligneN - centre_noyau))}:{(pixelLine - (ligneN - centre_noyau))}")
                         e = img[pixelLine - (ligneN - centre_noyau)][pixel - (numLigneN - centre_noyau)]
-                        
+
                     else:
                         print(f"pixel skippé: {pixelLine}{pixel}")
             ie = ie / moy_noyau

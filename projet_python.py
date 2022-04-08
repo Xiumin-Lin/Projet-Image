@@ -2,6 +2,7 @@ import os
 from enum import Enum
 
 import matplotlib.image as mplimg
+import matplotlib.pyplot as plt
 import numpy as np
 
 import functions
@@ -30,8 +31,8 @@ for file in os.listdir(base_path):
     # Si le fichier n'est pas une image, on ne le traite pas
     if file_extension not in valide_extension:
         continue
-    # if filename[0] != "55":
-    #     continue
+    if filename[0] != "33":
+        continue
     print("Traitement : " + file)  # [LOG]
     nb_image_total += 1
 
@@ -48,6 +49,10 @@ for file in os.listdir(base_path):
     if file_extension == ImageExtension.PNG.value:
         multiplicateur = 255
     img = (mplimg.imread(base_path + file).copy() * multiplicateur).astype(np.uint8)
+    functions.show_img(img, "Image Original")  # [LOG]
+
+    img_validation = functions.create_validation_image(img, json_util_data)
+    functions.show_img(img_validation, "Image validation")  # [LOG]
     img_resize = functions.image_resize(img, height=800)
 
     # Détection des pièces
@@ -62,9 +67,10 @@ for file in os.listdir(base_path):
           f"{nb_pieces_trouve} sur {nb_pieces_reelles} ({pourcentage}%)")
 
     functions.show_img(img_result, file + " après détection")  # [LOG]
+    # Interprétation du côté de la piece et de sa valeur
+    # TODO: à compléter
 
-
-
+    # break  # TODO: break temporaire pour tester la 1ère image
 
 pourcentage_final = traitement_reussite / nb_image_total * 100
 print(f"Résulat des analyses dans {base_path} : {traitement_reussite} / {nb_image_total}")
