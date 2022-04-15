@@ -1,6 +1,7 @@
 import json
 import os.path
-
+import pytessaract as pyte
+import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 
@@ -225,15 +226,15 @@ def detection_de_pieces(img):
 
     # TODO 5.5 HOUGH_CIRCLE
 
-    img_canny = cv2.morphologyEx(img_canny, cv2.MORPH_OPEN, np.ones((15, 15), np.uint8))
+    img_canny = ouverture (img_lisse, 15)
     nb_circle, img_circles, img_out = apply_hough(img_canny)
-        
+    
     # show_img(img_out, "HOUGH")
 
     # TODO 6. Si les contours ne sont pas assez gros, le dilater
     img_dilate = dilatation(img_out)
     show_img(img_dilate, "Dilaté")  # [LOG]
-    cv2.imshow("dilat", img_dilate)
+    show_img(img_dilate,"d  ilat")
     img_result = img_dilate
 
     # TODO 7. Compter les pieces
@@ -247,10 +248,31 @@ def detection_de_pieces(img):
     nb_circle = len(img_circles[0])
     if nb_circle > 10:
         nb_circle = 0
+        img_circles = [[]]
+    
+    if img_circles != [[]]:
+        a = cut_image_into_smaller_pieces(img,  img_circles)
+        counter = 0
+        for i in a:
+            counter+=1
+            plt.figure()
+            
+            plt.imshow( i, cmap=plt.cm.gray)
+        plt.show()
     return img_result, nb_circle
-
 def ouverture(img, size=3):
     return (cv2.morphologyEx(img , cv2.MORPH_OPEN, np.ones((size, size),np.uint8)))
+
+def cut_image_into_smaller_pieces(img, coord_array):
+    
+    array_mini_images = []
+    for i in coord_array:
+        #crop l'image originale avec les coordonnées des cerles detectés
+        mI = (i[1] - i[2], i[0] - i[2], i[2]*2)
+        array_mini_images.append(img[(mI[0]):(mI[0]+mI[2]),(mI[1]):(mI[1]+mI[2])])
+    """print("mini images : ")
+    print (array_mini_images)"""
+    return(array_mini_images)
 
 def apply_hough(img_input):
     
@@ -261,7 +283,7 @@ def apply_hough(img_input):
 
     if img_circles is not None:
         img_circles = np.uint16(np.around(img_circles))
-        print(img_circles)
+        #print(img_circles)
         for i in img_circles[0, :]:
             center = (i[0], i[1])
                 # circle center
@@ -276,7 +298,7 @@ def apply_hough(img_input):
     nb_circle = len(img_circles[0])
     
     
-    return (nb_circle, img_circles, img_out)
+    return (nb_circle, img_circles[0], img_out)
 
 def show_img(img, img_title):
     """plt.figure()

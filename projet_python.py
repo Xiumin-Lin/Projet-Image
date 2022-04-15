@@ -31,8 +31,7 @@ for file in os.listdir(base_path):
     # Si le fichier n'est pas une image, on ne le traite pas
     if file_extension not in valide_extension:
         continue
-    """
-    if filename[0] != "33":
+    """if filename[0] != "18":
         continue"""
     print("Traitement : " + file)  # [LOG]
     nb_image_total += 1
