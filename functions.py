@@ -1,7 +1,6 @@
 import json
 import os.path
-import pytessaract as pyte
-import matplotlib.pyplot as plt
+
 import cv2
 import numpy as np
 
@@ -225,16 +224,14 @@ def detection_de_pieces(img):
     img_canny = img_lisse
 
     # TODO 5.5 HOUGH_CIRCLE
-
-    img_canny = ouverture (img_lisse, 15)
-    nb_circle, img_circles, img_out = apply_hough(img_canny)
-    
-    # show_img(img_out, "HOUGH")
+    img_canny = cv2.morphologyEx(img_canny, cv2.MORPH_OPEN, np.ones((15, 15), np.uint8))
+    coords_cercles, img_hough = apply_hough(img_canny)
+    show_img(img_hough, "HOUGH")  # [LOG]
 
     # TODO 6. Si les contours ne sont pas assez gros, le dilater
-    img_dilate = dilatation(img_out)
+    img_dilate = dilatation(img_hough)
     show_img(img_dilate, "Dilaté")  # [LOG]
-    show_img(img_dilate,"d  ilat")
+    # cv2.imshow("dilat", img_dilate)
     img_result = img_dilate
 
     # TODO 7. Compter les pieces
@@ -243,68 +240,59 @@ def detection_de_pieces(img):
     # Affichage des contours détectées  # [LOG]
     cv2.drawContours(img, contours, -1, (0, 255, 0), 2)
     # cv2.imshow("Result", img)
-    cv2.waitKey(0)
+    # cv2.waitKey(0)
 
-    nb_circle = len(img_circles[0])
+    nb_circle = len(coords_cercles[0])
     if nb_circle > 10:
         nb_circle = 0
-        img_circles = [[]]
-    
-    if img_circles != [[]]:
-        a = cut_image_into_smaller_pieces(img,  img_circles)
-        counter = 0
-        for i in a:
-            counter+=1
-            plt.figure()
-            
-            plt.imshow( i, cmap=plt.cm.gray)
-        plt.show()
-    return img_result, nb_circle
+    return img_result, coords_cercles[0], nb_circle
+
+
 def ouverture(img, size=3):
-    return (cv2.morphologyEx(img , cv2.MORPH_OPEN, np.ones((size, size),np.uint8)))
+    return cv2.morphologyEx(img, cv2.MORPH_OPEN, np.ones((size, size), np.uint8))
+
 
 def cut_image_into_smaller_pieces(img, coord_array):
-    
     array_mini_images = []
     for i in coord_array:
-        #crop l'image originale avec les coordonnées des cerles detectés
-        mI = (i[1] - i[2], i[0] - i[2], i[2]*2)
-        array_mini_images.append(img[(mI[0]):(mI[0]+mI[2]),(mI[1]):(mI[1]+mI[2])])
+        # crop l'image originale avec les coordonnées des cerles detectés
+        mI = (i[1] - i[2], i[0] - i[2], i[2] * 2)
+        array_mini_images.append(img[(mI[0]):(mI[0] + mI[2]), (mI[1]):(mI[1] + mI[2])])
     """print("mini images : ")
     print (array_mini_images)"""
-    return(array_mini_images)
+    return array_mini_images
+
 
 def apply_hough(img_input):
-    
     rows = img_input.shape[0]
-    img_circles = cv2.HoughCircles(img_input, cv2.HOUGH_GRADIENT, 1, rows / 8,
-                               param1=100, param2=30,
-                               minRadius=1, maxRadius=1000)
-
-    if img_circles is not None:
-        img_circles = np.uint16(np.around(img_circles))
-        #print(img_circles)
-        for i in img_circles[0, :]:
+    coords_cercles = cv2.HoughCircles(img_input, cv2.HOUGH_GRADIENT, 1, rows / 8,
+                                      param1=100, param2=30,
+                                      minRadius=1, maxRadius=1000)
+    img_hough = None
+    if coords_cercles is not None:
+        coords_cercles = np.uint16(np.around(coords_cercles))
+        for i in coords_cercles[0, :]:
             center = (i[0], i[1])
-                # circle center
+            # circle center
             cv2.circle(img_input, center, 1, (0, 100, 100), 3)
             # circle outline
             radius = i[2]
-            img_out = cv2.circle(img_input, center, radius, (255, 0, 0), 3)
+            img_hough = cv2.circle(img_input, center, radius, (255, 0, 0), 3)
     else:
-        img_out = img_input
-        img_circles = [[]]
-    show_img(img_out, "HOUGH")
-    nb_circle = len(img_circles[0])
-    
-    
-    return (nb_circle, img_circles[0], img_out)
+        # Si 0 cercle detecté, alors on retourne l'img original + une liste vide de coords de cercle
+        img_hough = img_input
+        coords_cercles = [[]]
+
+    return coords_cercles, img_hough
+
 
 def show_img(img, img_title):
-    """plt.figure()
-    plt.title(img_title)
-    plt.imshow(img, cmap=plt.cm.gray)
-    plt.show()"""
+    var = None
+
+    # plt.figure()
+    # plt.title(img_title)
+    # plt.imshow(img, cmap=plt.cm.gray)
+    # plt.show()
 
 
 def load_jsonfile(json_path):
@@ -323,7 +311,7 @@ def load_jsonfile(json_path):
 
 
 def create_validation_image(img, json_data):
-    img_copy = np.zeros(img.shape, dtype=np.uint8)
+    img_copy = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
     print(img.shape)
     for piece in json_data["pieces"]:
         if piece["shape_type"] == "circle":
@@ -340,7 +328,7 @@ def create_validation_image(img, json_data):
             for points in piece["points"]:
                 list_pts.append([int(points[0]), int(points[1])])
             pts = np.array([list_pts], np.int32)
-            cv2.polylines(img_copy, [pts], True, (255, 255, 255), 10)
+            cv2.fillPoly(img_copy, [pts], 255)
 
     return img_copy
 
@@ -434,3 +422,24 @@ def convolution_diy(img, noyau):
             ie = ie / moy_noyau
             img_convolve[pixelLine][pixel] = ie
     return img_convolve
+
+
+def calcul_nb_fausse_piece(cercles_coords, img_valid_resize):
+    nb_fausse_piece = 0
+
+    for piece in cercles_coords:
+        print(piece)
+        white_px = 0
+        total_px = 0
+        centre = [piece[1], piece[0]]
+        rayon = piece[2]
+        for x in range(img_valid_resize.shape[0]):
+            for y in range(img_valid_resize.shape[1]):
+                if np.sqrt((centre[0] - x)**2 + (centre[1] - y)**2) <= rayon:
+                    total_px += 1
+                    if round(img_valid_resize[x, y]) == 255:
+                        white_px += 1
+        if round(white_px / total_px * 100) < 70:
+            nb_fausse_piece += 1
+
+    return nb_fausse_piece
