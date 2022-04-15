@@ -224,29 +224,14 @@ def detection_de_pieces(img):
     img_canny = img_lisse
 
     # TODO 5.5 HOUGH_CIRCLE
-    img_canny = cv2.morphologyEx(img_canny, cv2.MORPH_OPEN, np.ones((15, 15), np.uint8))
-    rows = img_canny.shape[0]
-    img_circles = cv2.HoughCircles(img_canny, cv2.HOUGH_GRADIENT, 1, rows / 8,
-                                   param1=100, param2=30,
-                                   minRadius=1, maxRadius=1000)
 
-    if img_circles is not None:
-        img_circles = np.uint16(np.around(img_circles))
-        print(img_circles)
-        for i in img_circles[0, :]:
-            center = (i[0], i[1])
-            # circle center
-            cv2.circle(img_canny, center, 1, (0, 100, 100), 3)
-            # circle outline
-            radius = i[2]
-            img_out = cv2.circle(img_canny, center, radius, (255, 0, 255), 3)
-    else:
-        img_out = img_canny
-        img_circles = [[]]
+    img_canny = cv2.morphologyEx(img_canny, cv2.MORPH_OPEN, np.ones((15, 15), np.uint8))
+    nb_circle, img_circles, img_out = apply_hough(img_canny)
+        
     # show_img(img_out, "HOUGH")
 
     # TODO 6. Si les contours ne sont pas assez gros, le dilater
-    img_dilate = dilatation(img_canny)
+    img_dilate = dilatation(img_out)
     show_img(img_dilate, "Dilaté")  # [LOG]
     cv2.imshow("dilat", img_dilate)
     img_result = img_dilate
@@ -264,6 +249,34 @@ def detection_de_pieces(img):
         nb_circle = 0
     return img_result, nb_circle
 
+def ouverture(img, size=3):
+    return (cv2.morphologyEx(img , cv2.MORPH_OPEN, np.ones((size, size),np.uint8)))
+
+def apply_hough(img_input):
+    
+    rows = img_input.shape[0]
+    img_circles = cv2.HoughCircles(img_input, cv2.HOUGH_GRADIENT, 1, rows / 8,
+                               param1=100, param2=30,
+                               minRadius=1, maxRadius=1000)
+
+    if img_circles is not None:
+        img_circles = np.uint16(np.around(img_circles))
+        print(img_circles)
+        for i in img_circles[0, :]:
+            center = (i[0], i[1])
+                # circle center
+            cv2.circle(img_input, center, 1, (0, 100, 100), 3)
+            # circle outline
+            radius = i[2]
+            img_out = cv2.circle(img_input, center, radius, (255, 0, 0), 3)
+    else:
+        img_out = img_input
+        img_circles = [[]]
+    show_img(img_out, "HOUGH")
+    nb_circle = len(img_circles[0])
+    
+    
+    return (nb_circle, img_circles, img_out)
 
 def show_img(img, img_title):
     """plt.figure()
