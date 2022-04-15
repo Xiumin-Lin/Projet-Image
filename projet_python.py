@@ -69,7 +69,7 @@ for file in os.listdir(base_path):
     # Cherche si chaque pièce detecté est une vrai pièce
     nb_fausse_piece = 0
     if nb_pieces_trouve != 0:
-        nb_fausse_piece = functions.calcul_nb_fausse_piece()
+        nb_fausse_piece = functions.calcul_nb_fausse_piece(cercles_coords, img_valid_resize)
     if nb_pieces_trouve == nb_pieces_reelles and nb_fausse_piece == 0:
         traitement_reussite += 1
 
