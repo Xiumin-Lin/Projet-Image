@@ -280,6 +280,18 @@ def cut_image_into_smaller_pieces(img, coord_array):
         array_mini_images.append(img[(m_i[0]):(m_i[0] + m_i[2]), (m_i[1]):(m_i[1] + m_i[2])])
     return array_mini_images
 
+def detect_dominant_colour(img, lowrange, highrange):
+    
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    hsv_color1 = np.asarray(lowrange)   
+    hsv_color2 = np.asarray(highrange)   
+
+    mask = cv2.inRange(img_hsv, hsv_color1, hsv_color2)
+    
+    plt.imshow(mask, cmap='gray')   # this colormap will display in black / white
+    plt.show()
+    return mask
 
 def apply_hough(img_input):
     rows = img_input.shape[0]

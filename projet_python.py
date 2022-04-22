@@ -1,6 +1,6 @@
 import os
 from enum import Enum
-
+import matplotlib.pyplot as plt
 import matplotlib.image as mplimg
 import numpy as np
 
@@ -69,7 +69,15 @@ for file in os.listdir(base_path):
     # Pour chaque cercle detecté, on l'extrait de l'image resize
     for img_piece in functions.cut_image_into_smaller_pieces(img_resize, cercles_coords):
         img_result_recognition = functions.piece_recognition(img_piece)
+        img_filtree = functions.detect_dominant_colour(img_result_recognition, (0,0,255), (30,255,255) )
+        
         functions.show_img(img_result_recognition, file + " après reconnaissance")  # [LOG]
+        functions.show_img(img_filtree, file + " après filtrage")
+        plt.figure()
+        print(img_filtree   )
+        plt.title("aAAAAAAAA")
+        plt.imshow(img_filtree, cmap=plt.cm.binary)
+        plt.show()
         # exit(0)  # TODO: arret temporaire pour tester la 1ère piece
 
     """ Calcul du résultat de la détection des pièces """
