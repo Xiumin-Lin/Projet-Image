@@ -19,13 +19,6 @@ base_path = "res" + os.path.sep + "base_test" + os.path.sep
 # récupère les valeurs de ImageExtension
 valide_extension = [item.value for item in ImageExtension]
 
-# Charge les images des pieces modele
-model_path = "res" + os.path.sep + "piece_model" + os.path.sep
-img_2e = (mplimg.imread(model_path + "2e.jpg").copy()).astype(np.uint8)
-functions.show_img(img_2e, "Image 2e Original")  # [LOG]
-modele_2e = functions.piece_recognition(img_2e)
-functions.show_img(modele_2e, "Model 2e après reconnaissance")  # [LOG]
-
 # Compteur pour calculer le taux de reussite de l'algo
 traitement_reussite = 0
 nb_image_total = 0
@@ -77,9 +70,7 @@ for file in os.listdir(base_path):
     for img_piece in functions.cut_image_into_smaller_pieces(img_resize, cercles_coords):
         img_result_recognition = functions.piece_recognition(img_piece)
         functions.show_img(img_result_recognition, file + " après reconnaissance")  # [LOG]
-        img_xor = functions.apply_xor(img_result_recognition, modele_2e)
-        functions.show_img(img_xor, file + " après xor")  # [LOG]
-        exit(0)  # TODO: arret temporaire pour tester la 1ère piece
+        # exit(0)  # TODO: arret temporaire pour tester la 1ère piece
 
     """ Calcul du résultat de la détection des pièces """
     nb_pieces_reelles = len(json_util_data['pieces'])

@@ -160,7 +160,7 @@ def seuillage(img, seuil):
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
             if img[i, j] >= seuil:
-                img_seuil[i, j] = 1
+                img_seuil[i, j] = 255
     return img_seuil
 
 
@@ -250,35 +250,12 @@ def piece_recognition(img_piece):
     # TODO (Part 2) 1. Resize
     img_piece_resize = image_resize(img_piece, height=200)
 
-    # TODO (Part 2) 2. Convertir l'image en gris
-    # Reminder : On pourrait convertir direct l'img en gris avant de les passer en param
-    img_gris = conversion_en_gris(img_piece_resize)
-    show_img(img_gris, "Gris")  # [LOG]
+    # TODO (Part 2) 2. Réduire les bruits avec un lissage de l'image
+    # Filtre Gaussian
+    img_lisse = filtre_gaussian(img_piece_resize, ksize=3)
+    # show_img(img_lisse, "Lissage avec filtre gaussian")  # [LOG]
 
-    # TODO (Part 2) 3. Si historigramme de l'img est trop sombre ou trop clair, on égalise
-    # img_histo = historigramme(img_gris)
-    # img_egalise = egaliser(img_gris, img_histo)
-    # show_img(img_egalise, "Egalisé")  # [LOG]
-
-    # TODO (Part 2) 4. Réduire les bruits avec un lissage de l'image
-    # 3.a. Filtre Moyenneur
-    # img_lisse = filtre_moyenneur(img_egalise)
-    # 3.b. Filtre Median
-    # img_lisse = filtre_median(img_gris, 9)
-    # 3.c. Filtre Gaussian
-    img_lisse = filtre_gaussian(img_gris, ksize=3)
-    show_img(img_lisse, "Lissage avec filtre gaussian")  # [LOG]
-
-    # TODO (Part 2) 5. Detection de contour (Algo de Canny)
-    img_canny = algo_canny(img_lisse)
-    show_img(img_canny, "Canny")  # [LOG]
-
-    # TODO (Part 2) 6.1 Extraire le chiffre (comme ce qu'on a fait avec la piece)
-    # TODO (Part 2) 6.1.1. Faire un XOR avec le chiffre modele (1, 2 et 5)
-
-    # TODO (Part 2) 6.2 Si pas de chiffre alors c face
-
-    img_result = img_canny
+    img_result = img_lisse
     return img_result
 
 
