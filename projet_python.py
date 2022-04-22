@@ -14,9 +14,8 @@ class ImageExtension(Enum):
     PNG = "png"
 
 
-# TODO: pouvoir choisir entre base_test & base_validation
-base_path = "res" + os.path.sep + "base_test" + os.path.sep
-# récupère les valeurs de ImageExtension
+base_path = functions.enter_images_path()
+# Récupère les valeurs de ImageExtension
 valide_extension = [item.value for item in ImageExtension]
 
 # Compteur pour calculer le taux de reussite de l'algo
@@ -67,17 +66,10 @@ for file in os.listdir(base_path):
     """ Reconnaitre le côté de la piece et de sa valeur """
     # TODO: à compléter
     # Pour chaque cercle detecté, on l'extrait de l'image resize
-    for img_piece in functions.cut_image_into_smaller_pieces(img_resize, cercles_coords):
+    list_pieces = functions.cut_image_into_smaller_pieces(img_resize, cercles_coords)
+    for img_piece in list_pieces:
         img_result_recognition = functions.piece_recognition(img_piece)
-        img_filtree = functions.detect_dominant_colour(img_result_recognition, (0,0,255), (30,255,255) )
-        
         functions.show_img(img_result_recognition, file + " après reconnaissance")  # [LOG]
-        functions.show_img(img_filtree, file + " après filtrage")
-        plt.figure()
-        print(img_filtree   )
-        plt.title("aAAAAAAAA")
-        plt.imshow(img_filtree, cmap=plt.cm.binary)
-        plt.show()
         # exit(0)  # TODO: arret temporaire pour tester la 1ère piece
 
     """ Calcul du résultat de la détection des pièces """
@@ -97,6 +89,9 @@ for file in os.listdir(base_path):
     # break  # TODO: break temporaire pour tester la 1ère image
 
 # Calcule des résultats quantitatifs
-pourcentage_final = round(traitement_reussite / nb_image_total * 100)
-print(f"Résulat des analyses dans {base_path} : {traitement_reussite} / {nb_image_total}")
+if nb_image_total != 0:
+    pourcentage_final = round(traitement_reussite / nb_image_total * 100)
+    print(f"Résulat des analyses dans {base_path} : {traitement_reussite} / {nb_image_total}")
+else:
+    print("Aucun fichier trouvé !")
 print("Fin de la détection !")

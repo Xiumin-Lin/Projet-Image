@@ -1,6 +1,10 @@
+import os
 import json
 import os.path
+import sys
+
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import cv2
 import numpy as np
 
@@ -95,7 +99,6 @@ def filtre_gaussian(img, ksize=17):
 
 
 def dilatation(img, ksize=3):
-    # TODO
     # print("DO Dilatation")  # [LOG]
     elem_struct = np.ones((ksize, ksize), np.uint8)
     img_dilate = cv2.dilate(img, elem_struct, iterations=3)
@@ -103,7 +106,6 @@ def dilatation(img, ksize=3):
 
 
 def erosion(img):
-    # TODO
     # print("DO Erosion")  # [LOG]
     elem_struct = np.ones((3, 3), np.uint8)
     img_dilate = cv2.erode(img, elem_struct, iterations=1)
@@ -165,14 +167,12 @@ def seuillage(img, seuil):
 
 
 def filtre_sobel(img):
-    # TODO
     # print("DO Filtre_sobel")  # [LOG]
     img_sobel = cv2.Sobel(img, ddepth=-1, dx=1, dy=1, ksize=1)
     return img_sobel
 
 
 def algo_canny(img):
-    # TODO
     # print("DO Algo_canny")  # [LOG]
     meilleur_seuil = otsu(img)
     img_contour = cv2.Canny(img, 50, meilleur_seuil)
@@ -255,7 +255,10 @@ def piece_recognition(img_piece):
     img_lisse = filtre_gaussian(img_piece_resize, ksize=3)
     # show_img(img_lisse, "Lissage avec filtre gaussian")  # [LOG]
 
-    img_result = img_lisse
+    # TODO (Part 2) 3. Classifier les pieces selons leurs couleurs
+    img_filtree = detect_dominant_colour(img_lisse, (0, 0, 255), (30, 255, 255))
+
+    img_result = img_filtree
     return img_result
 
 
@@ -272,26 +275,27 @@ def ouverture(img, size=3):
     return cv2.morphologyEx(img, cv2.MORPH_OPEN, np.ones((size, size), np.uint8))
 
 
-def cut_image_into_smaller_pieces(img, coord_array):
+def cut_image_into_smaller_pieces(img, list_coords_pieces):
     array_mini_images = []
-    for i in coord_array:
+    for piece in list_coords_pieces:
         # crop l'image originale avec les coordonnées des cerles detectés
-        m_i = (i[1] - i[2], i[0] - i[2], i[2] * 2)
+        if piece[1] < piece[2] or piece[0] < piece[2]:
+            continue
+        m_i = (piece[1] - piece[2], piece[0] - piece[2], piece[2] * 2)
         array_mini_images.append(img[(m_i[0]):(m_i[0] + m_i[2]), (m_i[1]):(m_i[1] + m_i[2])])
     return array_mini_images
 
+
 def detect_dominant_colour(img, lowrange, highrange):
-    
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    show_img(img_hsv, "Hsv")
 
-    hsv_color1 = np.asarray(lowrange)   
-    hsv_color2 = np.asarray(highrange)   
-
+    hsv_color1 = np.asarray(lowrange)
+    hsv_color2 = np.asarray(highrange)
     mask = cv2.inRange(img_hsv, hsv_color1, hsv_color2)
-    
-    plt.imshow(mask, cmap='gray')   # this colormap will display in black / white
-    plt.show()
+
     return mask
+
 
 def apply_hough(img_input):
     rows = img_input.shape[0]
@@ -300,7 +304,7 @@ def apply_hough(img_input):
                                       minRadius=1, maxRadius=1000)
     img_hough = None
     if coords_cercles is not None:
-        coords_cercles = np.uint16(np.around(coords_cercles))
+        coords_cercles = np.uint16(np.around(coords_cercles))  # ne pas changer le uint16
         for i in coords_cercles[0, :]:
             center = (i[0], i[1])
             # circle center
@@ -340,7 +344,6 @@ def load_jsonfile(json_path):
 
 def create_validation_image(img, json_data):
     img_copy = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
-    print(img.shape)
     for piece in json_data["pieces"]:
         if piece["shape_type"] == "circle":
             brut_center = piece["points"][0]
@@ -355,7 +358,7 @@ def create_validation_image(img, json_data):
             list_pts = []
             for points in piece["points"]:
                 list_pts.append([int(points[0]), int(points[1])])
-            pts = np.array([list_pts], np.int32)
+            pts = np.array([list_pts], np.int32)  # ne pas changer le int32
             cv2.fillPoly(img_copy, [pts], 255)
 
     return img_copy
@@ -456,7 +459,6 @@ def calcul_nb_fausse_piece(cercles_coords, img_valid_resize):
     nb_fausse_piece = 0
 
     for piece in cercles_coords:
-        print(piece)
         white_px = 0
         total_px = 0
         centre = [piece[1], piece[0]]
@@ -471,3 +473,34 @@ def calcul_nb_fausse_piece(cercles_coords, img_valid_resize):
             nb_fausse_piece += 1
 
     return nb_fausse_piece
+
+
+def enter_images_path():
+    arg = ""
+    if len(sys.argv) > 1:
+        arg = sys.argv[1]
+    while True:
+        print("Choisissez le nom du dossier à traiter :"
+              "\n(1) Base d'apprentissage"
+              "\n(2) Base de validation"
+              "\n(3) Une autre base"
+              "\n>>> ", end='')
+        if len(arg) > 0:
+            base_choice = sys.argv[1]
+            arg = ""  # utilise une seul fois
+        else:
+            base_choice = input()
+        if base_choice == "1":
+            return "res" + os.path.sep + "base_test" + os.path.sep
+        elif base_choice == "2":
+            return "res" + os.path.sep + "base_validation" + os.path.sep
+        elif base_choice == "3":
+            print("Entrer le chemin vers le dossier contenant les images à traiter :"
+                  "\n>>> ", end='')
+            path = input()
+            path += os.path.sep
+            if os.path.exists(path):
+                return path
+            print(f"Le chemin '{path}' n'a pas été trouvé ! Peut-être essayer un chemin relatif.\n")
+        else:
+            print(f"'{base_choice}' n'est pas un choix invalide !\n")
