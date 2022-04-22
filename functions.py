@@ -77,7 +77,7 @@ def filtre_median(img, size=3):
     return img_median
 
 
-def filtre_gaussian(img, size=17):
+def filtre_gaussian(img, ksize=17):
     # print("DO Filtre_gaussian")  # [LOG]
     # gaus_kernel_3x3 = np.asarray([[1, 2, 1],
     #                               [2, 3, 2],
@@ -90,7 +90,7 @@ def filtre_gaussian(img, size=17):
     #                               [1, 4, 5, 4, 1]], dtype=np.uint8) / 273
 
     # img_gaussien = convolution_2d(img, gaus_kernel_5x5)
-    img_gaussien = cv2.GaussianBlur(img, (size, size), 0)
+    img_gaussien = cv2.GaussianBlur(img, (ksize, ksize), 0)
     return img_gaussien
 
 
@@ -175,7 +175,7 @@ def algo_canny(img):
     # TODO
     # print("DO Algo_canny")  # [LOG]
     meilleur_seuil = otsu(img)
-    img_contour = cv2.Canny(img, 30, meilleur_seuil)
+    img_contour = cv2.Canny(img, 50, meilleur_seuil)
     return img_contour
 
 
@@ -190,7 +190,7 @@ def compter_pieces(img):
 def detection_de_pieces(img):
     # TODO 1. Convertir l'image en gris
     img_gris = conversion_en_gris(img)
-    show_img(img_gris, "Gris")  # [LOG]
+    # show_img(img_gris, "Gris")  # [LOG]
     # show_img(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), "Gris by cv2")  # [LOG]
 
     # TODO 2. Si historigramme de l'img est trop sombre ou trop clair, on égalise
@@ -203,13 +203,10 @@ def detection_de_pieces(img):
     # 3.a. Filtre Moyenneur
     # img_lisse = filtre_moyenneur(img_egalise)
     # 3.b. Filtre Median
-    # img_median = filtre_median(img_gris)
-    # 3.c. Filtre Gaussian
-
-    # img_lisse = filtre_gaussian(img_gris)
     img_lisse = filtre_median(img_gris, 9)
-
-    show_img(img_lisse, "Lissage avec filtre gaussien")  # [LOG]
+    # show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
+    # 3.c. Filtre Gaussian
+    # img_lisse = filtre_gaussian(img_gris)
 
     # TODO 4. Trouver le seuil adéquat et l'appliquer
     # meilleur_seuil = otsu(img_lisse)
@@ -226,7 +223,7 @@ def detection_de_pieces(img):
     # Hough circle inclu déjà l'algo de canny
     img_ouvert = ouverture(img_lisse, 15)
     coords_cercles, img_hough = apply_hough(img_ouvert)
-    show_img(img_hough, "HOUGH")  # [LOG]
+    # show_img(img_hough, "HOUGH")  # [LOG]
     img_result = img_hough
 
     # TODO 6. Si les contours ne sont pas assez gros, le dilater
@@ -247,6 +244,51 @@ def detection_de_pieces(img):
     if nb_circle > 10:
         nb_circle = 0
     return img_result, coords_cercles[0], nb_circle
+
+
+def piece_recognition(img_piece):
+    # TODO (Part 2) 1. Resize
+    img_piece_resize = image_resize(img_piece, height=200)
+
+    # TODO (Part 2) 2. Convertir l'image en gris
+    # Reminder : On pourrait convertir direct l'img en gris avant de les passer en param
+    img_gris = conversion_en_gris(img_piece_resize)
+    show_img(img_gris, "Gris")  # [LOG]
+
+    # TODO (Part 2) 3. Si historigramme de l'img est trop sombre ou trop clair, on égalise
+    # img_histo = historigramme(img_gris)
+    # img_egalise = egaliser(img_gris, img_histo)
+    # show_img(img_egalise, "Egalisé")  # [LOG]
+
+    # TODO (Part 2) 4. Réduire les bruits avec un lissage de l'image
+    # 3.a. Filtre Moyenneur
+    # img_lisse = filtre_moyenneur(img_egalise)
+    # 3.b. Filtre Median
+    # img_lisse = filtre_median(img_gris, 9)
+    # 3.c. Filtre Gaussian
+    img_lisse = filtre_gaussian(img_gris, ksize=3)
+    show_img(img_lisse, "Lissage avec filtre gaussian")  # [LOG]
+
+    # TODO (Part 2) 5. Detection de contour (Algo de Canny)
+    img_canny = algo_canny(img_lisse)
+    show_img(img_canny, "Canny")  # [LOG]
+
+    # TODO (Part 2) 6.1 Extraire le chiffre (comme ce qu'on a fait avec la piece)
+    # TODO (Part 2) 6.1.1. Faire un XOR avec le chiffre modele (1, 2 et 5)
+
+    # TODO (Part 2) 6.2 Si pas de chiffre alors c face
+
+    img_result = img_canny
+    return img_result
+
+
+def apply_xor(img, other_img):
+    img_xor = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i][j] != other_img[i][j]:
+                img_xor[i][j] = 255
+    return img_xor
 
 
 def ouverture(img, size=3):
