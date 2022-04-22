@@ -59,12 +59,15 @@ for file in os.listdir(base_path):
     img_valid_resize = functions.image_resize(img_validation, height=800)
     img_resize = functions.image_resize(img, height=800)
 
-    # Détection des pièces
+    """ Détection des pièces """
     # Attention "nb_pieces_trouve" peut être différent de "coord_find_cercle" s'il y a un trop grand nombre de pièce
     img_result, cercles_coords, nb_pieces_trouve = functions.detection_de_pieces(img_resize)
     functions.show_img(img_result, file + " après détection")  # [LOG]
 
-    # Calcul du résultat de la détection des pièces
+    """ Interprétation du côté de la piece et de sa valeur """
+    # TODO: à compléter
+
+    """ Calcul du résultat de la détection des pièces """
     nb_pieces_reelles = len(json_util_data['pieces'])
     # Cherche si chaque pièce detecté est une vrai pièce
     nb_fausse_piece = 0
@@ -77,9 +80,6 @@ for file in os.listdir(base_path):
     print(f"Traitement {file} : Nombre de pièce(s) détectée(s) : " +
           f"{nb_pieces_trouve} sur {nb_pieces_reelles} ({pourcentage}%)"
           f"avec {nb_fausse_piece} faux positive.")
-
-    # Interprétation du côté de la piece et de sa valeur
-    # TODO: à compléter
 
     # break  # TODO: break temporaire pour tester la 1ère image
 

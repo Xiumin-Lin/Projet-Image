@@ -1,6 +1,6 @@
 import json
 import os.path
-
+import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 
@@ -94,10 +94,10 @@ def filtre_gaussian(img, size=17):
     return img_gaussien
 
 
-def dilatation(img):
+def dilatation(img, ksize=3):
     # TODO
     # print("DO Dilatation")  # [LOG]
-    elem_struct = np.ones((3, 3), np.uint8)
+    elem_struct = np.ones((ksize, ksize), np.uint8)
     img_dilate = cv2.dilate(img, elem_struct, iterations=3)
     return img_dilate
 
@@ -218,29 +218,30 @@ def detection_de_pieces(img):
     """# TODO 5. Detection de contour
     # 5.a Filtre de Sobel
     # img_result = filtre_sobel(img_dilate)
-    # 5.b Algo de Canny (le 3. et 4. est compris dedans)
-    img_canny = algo_canny(img_lisse)
-    show_img(img_canny, "Canny")  # [LOG]"""
-    img_canny = img_lisse
+    # 5.b Algo de Canny (le 3. et 4. est compris dedans)"""
+    # img_canny = algo_canny(img_lisse)
+    # show_img(img_canny, "Canny")  # [LOG]
 
     # TODO 5.5 HOUGH_CIRCLE
-    img_canny = cv2.morphologyEx(img_canny, cv2.MORPH_OPEN, np.ones((15, 15), np.uint8))
-    coords_cercles, img_hough = apply_hough(img_canny)
+    # Hough circle inclu déjà l'algo de canny
+    img_ouvert = ouverture(img_lisse, 15)
+    coords_cercles, img_hough = apply_hough(img_ouvert)
     show_img(img_hough, "HOUGH")  # [LOG]
+    img_result = img_hough
 
     # TODO 6. Si les contours ne sont pas assez gros, le dilater
-    img_dilate = dilatation(img_hough)
-    show_img(img_dilate, "Dilaté")  # [LOG]
-    # cv2.imshow("dilat", img_dilate)
-    img_result = img_dilate
+    # img_dilate = dilatation(img_hough, 3)
+    # show_img(img_dilate, "Dilaté")  # [LOG]
+    # # cv2.imshow("dilat", img_dilate)
+    # img_result = img_dilate
 
     # TODO 7. Compter les pieces
-    nb_pieces, contours = compter_pieces(img_result)
-
-    # Affichage des contours détectées  # [LOG]
-    cv2.drawContours(img, contours, -1, (0, 255, 0), 2)
-    # cv2.imshow("Result", img)
-    # cv2.waitKey(0)
+    # nb_pieces, contours = compter_pieces(img_result)
+    #
+    # # Affichage des contours détectées  # [LOG]
+    # cv2.drawContours(img, contours, -1, (0, 255, 0), 2)
+    # # cv2.imshow("Result", img)
+    # # cv2.waitKey(0)
 
     nb_circle = len(coords_cercles[0])
     if nb_circle > 10:
@@ -256,10 +257,8 @@ def cut_image_into_smaller_pieces(img, coord_array):
     array_mini_images = []
     for i in coord_array:
         # crop l'image originale avec les coordonnées des cerles detectés
-        mI = (i[1] - i[2], i[0] - i[2], i[2] * 2)
-        array_mini_images.append(img[(mI[0]):(mI[0] + mI[2]), (mI[1]):(mI[1] + mI[2])])
-    """print("mini images : ")
-    print (array_mini_images)"""
+        m_i = (i[1] - i[2], i[0] - i[2], i[2] * 2)
+        array_mini_images.append(img[(m_i[0]):(m_i[0] + m_i[2]), (m_i[1]):(m_i[1] + m_i[2])])
     return array_mini_images
 
 
@@ -287,12 +286,10 @@ def apply_hough(img_input):
 
 
 def show_img(img, img_title):
-    var = None
-
-    # plt.figure()
-    # plt.title(img_title)
-    # plt.imshow(img, cmap=plt.cm.gray)
-    # plt.show()
+    plt.figure()
+    plt.title(img_title)
+    plt.imshow(img, cmap=plt.cm.gray)
+    plt.show()
 
 
 def load_jsonfile(json_path):
