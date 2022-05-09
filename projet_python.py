@@ -55,12 +55,12 @@ for file in os.listdir(BASE_PATH):
         multiplicateur = 255
     img_originale = (mplimg.imread(BASE_PATH + file).copy() * multiplicateur).astype(np.uint8)
     img_resize = tutil.image_resize(img_originale, height=IMG_HEIGHT)  # On réduit la taille l'image
-    tutil.show_img(img_resize, "Image originale redimensionnée")  # [LOG]
+    functions.show_img(img_resize, "Image originale redimensionnée")  # [LOG]
 
     """ Détection des pièces """
     # Attention "nb_pieces_trouvees" peut être différent de "coord_find_cercle" s'il y a un trop grand nombre de pièce
     img_result, cercles_coords, nb_pieces_trouvees = functions.detection_de_pieces(img_resize)
-    tutil.show_img(img_result, file + " après détection")  # [LOG]
+    functions.show_img(img_result, file + " après détection")  # [LOG]
 
     """ Reconnaitre la valeur de la piece """
     liste_pieces_detectees = functions.reconnaissance_de_valeur(img_resize, cercles_coords)
@@ -74,7 +74,7 @@ for file in os.listdir(BASE_PATH):
     if nb_pieces_trouvees != 0:
         # Récup l'image de validation
         img_validation = functions.create_validation_image(img_originale, json_util_data)
-        tutil.show_img(img_validation, "Image validation")  # [LOG]
+        functions.show_img(img_validation, "Image validation")  # [LOG]
         # On réduit la taille de l'image
         img_valid_resize = tutil.image_resize(img_validation, height=IMG_HEIGHT)
         # On calcule et recupere les erreurs d'analyse des images

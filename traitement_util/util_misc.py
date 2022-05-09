@@ -98,12 +98,6 @@ def cut_image_into_smaller_pieces(img, list_coords_pieces):
         array_mini_images.append(img[(m_i[0]):(m_i[0] + m_i[2]), (m_i[1]):(m_i[1] + m_i[2])])
     return array_mini_images
 
-def show_img(img, img_title):
-    plt.figure()
-    plt.title(img_title)
-    plt.imshow(img, cmap=plt.cm.gray)
-    plt.show()
-
 def get_white_px_pourcentage_in_cercle(piece_coord, img):
     """
     Retourne le nombre de pixel blanc et de pixel total de la pièce donnée en param.

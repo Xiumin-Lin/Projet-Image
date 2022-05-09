@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 
+def show_img(img, img_title):
+    plt.figure()
+    plt.title(img_title)
+    plt.imshow(img, cmap=plt.cm.gray)
+    plt.show()
+
 def algo_canny(img):
     meilleur_seuil = tutil.otsu(img)
     img_contour = cv2.Canny(img, 50, meilleur_seuil)
