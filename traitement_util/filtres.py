@@ -3,23 +3,52 @@ import numpy as np
 
 
 def convolution_2d(img, noyau):
-    """ Convolution avec un noyau à 2 dimensions """
+    """
+    input: une [numpy.array] de l'image a convolve
+    input: une [numpy.array] du noyeay
+    output: une [numpy.array] de l'image après convolution
+    
+    
+    Convolution avec un noyau à 2 dimensions
+    """
+    
     img_convolve_2d = cv2.filter2D(img, ddepth=-1, kernel=noyau)
     return img_convolve_2d
 
 
 def filtre_moyenneur(img):
+    """
+    input: une [numpy.array] de l'image a laquelle il faut appliquer un filtre moyenneur
+    output: une [numpy.array] de l'image après application du filtre
+    
+    
+    applique un filtre moyenneur sur une image
+    """
     moy_kernel_5x5 = np.ones((5, 5), np.uint8) / 25
     img_moyenneur = convolution_2d(img, moy_kernel_5x5)
     return img_moyenneur
 
 
 def filtre_median(img, ksize=3):
+    """
+    input: une [numpy.array] de l'image a laquelle il faut appliquer un filtre median
+    input: un [int] de la taille du noyeau pour le filtre median
+    output:  une [numpy.array] de l'image après application du filtre median
+
+    applique un filtre median sur une image
+    """
     img_median = cv2.medianBlur(img, ksize=ksize)
     return img_median
 
 
 def filtre_gaussian(img, ksize=17):
+    """
+    input: une [numpy.array] de l'image a laquelle il faut appliquer un filtre gaussien (convolution)
+    input: un [int] de la taille du noyeau pour le filtre gaussien
+    output:  une [numpy.array] de l'image après application du filtre gaussien
+    
+    applique un filtre gaussien sur une image
+    """
     # gaus_kernel_3x3 = np.asarray([[1, 2, 1],
     #                               [2, 3, 2],
     #                               [1, 2, 1], ], dtype=np.uint8) / 16
@@ -36,6 +65,13 @@ def filtre_gaussian(img, ksize=17):
 
 
 def filtre_sobel(img):
+    """
+    input: une [numpy.array] de l'image a laquelle il faut appliquer un filtre de sobel (convolution)
+    input: un [int] de la taille du noyeau pour le filtre de sobel
+    output:  une [numpy.array] de l'image après application du filtre de sobel
+    
+    applique un filtre de sobel sur une image
+    """
     img_sobel = cv2.Sobel(img, ddepth=-1, dx=1, dy=1, ksize=1)
     return img_sobel
 
@@ -43,6 +79,13 @@ def filtre_sobel(img):
 # non utilisée
 ###########################################
 def convolution_diy(img, noyau):
+    """
+    input: une [numpy.array] de l'image a laquelle il faut appliquer un filtre donné par le 2e input
+    input:  une [numpy.array] du noyeau
+    output:  une [numpy.array] de l'image après application de la convolution
+    
+    applique la convolution sur une image
+    """
     img_convolve = np.zeros((img.shape[0], img.shape[1], 1), dtype=np.uint8)
 
     # Test que le noyeau est de (n x n) avec n impair

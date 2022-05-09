@@ -3,6 +3,12 @@ import numpy as np
 
 
 def conversion_en_gris(img):
+    """
+    input: une [numpy.array] de l'image a convertire en gris
+    output: une [numpy.array] de l'image convertie en gris
+    
+    convertis une image en gris
+    """
     img_gris = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
@@ -17,6 +23,12 @@ def conversion_en_gris(img):
 
 
 def historigramme(img):
+    """
+    input: une [numpy.array] de l'image grisée
+    output: une [liste de int] (un histograme) de l'image, avec le nb d'occurence de chaque teinte de gris
+
+    crée un histograme d'une image en gris
+    """
     histogram = np.zeros(256, dtype=np.uint8)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
@@ -27,9 +39,10 @@ def historigramme(img):
 
 def histo_cumule(histo):
     """
+    input: [liste de int], historigramme 
+    output: [liste de int]'historigramme cummulé, le cumulé total des valeurs de l'histograme de base
+    
     Retourne l'historigramme cummulé à partir d'un historigramme
-    :param histo un historigramme
-    :returns l'historigramme cummulé, le cumulé total des valeurs de l'histo
     """
     h_cumul = np.zeros(len(histo))
     cumul = 0
@@ -41,10 +54,11 @@ def histo_cumule(histo):
 
 def egalisation(img, histo):
     """
+    input: une [numpy.array] img l'image à égaliser
+    input: une [liste de int] histo l'historigramme de l'image
+    output: une [numpy.array], l'image égalisée
+    
     Opération d'égalisation de l'image donnée en param
-    :param img l'image à égaliser
-    :param histo l'historigramme de l'image
-    :return l'image égalisée
     """
     h_cumule, cumul = histo_cumule(histo)
     img_egalise = np.zeros(img.shape, dtype=np.uint8)
@@ -61,6 +75,11 @@ def egalisation(img, histo):
 
 
 def seuillage(img, seuil):
+    """
+    input: une [numpy.array] de l'image a convertire en gris
+    input: un seuil [int]
+    output: une numpy.array de l'image convertie en gris
+    """
     img_seuil = np.zeros(img.shape, dtype=np.uint8)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
@@ -70,7 +89,11 @@ def seuillage(img, seuil):
 
 
 def otsu(img):
-    """ Seuillage automatique : Méthode Otsu (version du professeur Sylvain Lobry) """
+    """ 
+    input: une [numpy.array] de l'image dont il faut trouver le seuil
+    output: un [int] du meilleur seuil trouvé par otsu
+
+    Seuillage automatique : Méthode Otsu (version du professeur Sylvain Lobry) """
     meilleur_seuil = 0
     minimun = 10_000_000_000
     histogram = historigramme(img)
@@ -113,19 +136,37 @@ def otsu(img):
 
 
 def algo_canny(img):
+    """
+    input: une [numpy.array] de l'image pour laquelle il faut appliquer canny
+    output: une [numpy.array] de l'image apres canny
+    
+    on utilise cv2.Canny ("https://docs.opencv.org/4.x/da/d22/tutorial_py_canny.html")
+    """
     meilleur_seuil = otsu(img)
     img_contour = cv2.Canny(img, 50, meilleur_seuil)
     return img_contour
 
 
 def compter_pieces(img):
+    """
+    input: une [numpy.array] de l'image pour laquelle il faut appliquer cv2.findContours
+    output: [int] le nb de pieces
+    output: [array] la liste retournée par cv2.findContours
+    
+    on utilise cv2.Canny ("https://docs.opencv.org/4.x/da/d22/tutorial_py_canny.html")
+    """
     (contours_piece, _) = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     return len(contours_piece), contours_piece
 
 
 def apply_hough(img_input):
-    """ Applique Hough Cercle """
+    """ 
+    input: une [numpy.array] de l'image pour laquelle il faut appliquer cv2.findContours
+    output: une [liste de 3tuples] avec les coordonnées des cercles (x,y,rayon)
+    output: l'image de base (donnée en input) avec en plus les cercles trouvés par hough dessus
+
+    Applique Hough Cercle """
     rows = img_input.shape[0]
     coords_cercles = cv2.HoughCircles(img_input, cv2.HOUGH_GRADIENT, 1, rows / 8,
                                       param1=100, param2=30,
@@ -149,6 +190,14 @@ def apply_hough(img_input):
 
 
 def apply_xor(img, other_img):
+    """
+    input: une [numpy.array] de la premiere image pour laquelle il faut appliquer xor
+    input: une [numpy.array] de la deuxieme image pour laquelle il faut appliquer xor
+    output: une [numpy.array] de l'image resultante du xor
+
+    retournes image1 XOR image2 
+    """
+
     img_xor = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
@@ -158,6 +207,15 @@ def apply_xor(img, other_img):
 
 
 def detect_colour(img_hsv, lowrange, highrange):
+    """
+    input: une [numpy.array] de la premiere image pour laquelle il faut detecter les contours
+    input: un [int] de la valeure basse
+    input: un [int] de la valeure haute
+
+    output: un masque [numpy.array]
+
+    retournes image1 XOR image2 
+    """
     low_hsv_color = np.asarray(lowrange)
     high_hsv_color = np.asarray(highrange)
     mask = cv2.inRange(img_hsv, low_hsv_color, high_hsv_color)
@@ -168,9 +226,9 @@ def get_white_px_pourcentage_in_cercle(piece_coord, img):
     """
     Retourne le nombre de pixel blanc et de pixel total de la pièce donnée en param.
     ---
-    :param piece_coord les coordonnées de la pièce -> (x, y, rayon)
-    :param img l'image contenant la pièce
-    :returns le pourcentage de nb de px blanc dans le cercle
+    input: piece_coord les coordonnées de la pièce -> (x, y, rayon)
+    input: img l'image contenant la pièce
+    output: le pourcentage de nb de px blanc dans le cercle
     """
     white_px = 0
     total_px = 0
@@ -188,6 +246,12 @@ def get_white_px_pourcentage_in_cercle(piece_coord, img):
 
 
 def cut_image_into_smaller_pieces(img, list_coords_pieces):
+    """
+    input: une [numpy.array] de l'image pour laquelle il faut appliquer le rognage
+    input: une [array de tuples] de coordonnées des pieces (x,y,rayon) avec x,y le centre de la piece
+
+    input: une [array de numpy.array] une liste d'images des pieces
+    """
     array_mini_images = []
     for piece in list_coords_pieces:
         # crop l'image originale avec les coordonnées des cerles detectés
@@ -200,6 +264,12 @@ def cut_image_into_smaller_pieces(img, list_coords_pieces):
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     """
+    input: une [numpy.array] de l'image a resize
+    input: [int] de la largeure de la deuxieme image
+    input:
+    input:
+    output:une [numpy.array] de l'image resized
+
     Fonction pour redimensionner une image sans perdre son allure d'origine
     Source : https://stackoverflow.com/questions/44650888/resize-an-image-without-distortion-opencv
     """
