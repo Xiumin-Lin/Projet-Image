@@ -21,18 +21,18 @@ def show_img(img, img_title):
 def detection_de_pieces(img):
     # TODO 1. Convertir l'image en gris
     img_gris = tutil.conversion_en_gris(img)
-    show_img(img_gris, "Gris")  # [LOG]
+    # show_img(img_gris, "Gris")  # [LOG]
     # TODO 2. Réduire les bruits avec un lissage de l'image
     # Filtre Median
     img_lisse = fltr.filtre_median(img_gris, 9)
-    show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
+    # show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
     # TODO 3 HOUGH_CIRCLE
     # Hough circle inclu déjà l'algo de canny
     img_ouvert = morph.ouverture(img_lisse, 15)
-    show_img(img_ouvert, "Ouverture")  # [LOG]
+    # show_img(img_ouvert, "Ouverture")  # [LOG]
     coords_cercles, img_hough = tutil.apply_hough(img_ouvert)
     img_result = img_hough
-    show_img(img_hough, "HOUGH")  # [LOG]
+    # show_img(img_hough, "HOUGH")  # [LOG]
     nb_circle = len(coords_cercles[0])
     if nb_circle > 10:
         nb_circle = 0
@@ -43,6 +43,7 @@ def detection_de_pieces(img):
 def reconnaissance_de_valeur(img, cercles_coords):
     # TODO 1. Réduire les bruits avec un filtre median
     img_lisse = fltr.filtre_median(img, ksize=3)
+    show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
     # TODO 2. Convertir l'image RGB en HSV
     img_hsv = cv2.cvtColor(img_lisse, cv2.COLOR_RGB2HSV)
     # TODO 3. Recup l'image contenant qu les couleurs desirée (un orange et un rouge)

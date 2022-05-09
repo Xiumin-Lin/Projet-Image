@@ -23,7 +23,8 @@ IMG_HEIGHT = 800
 BASE_PATH = functions.enter_images_path()
 
 """ Compteur pour calculer le taux de reussite de l'algo """
-traitement_reussite = 0
+detection_reussite = 0
+reconnaissance_reussite = 0
 nb_image_total = 0
 
 print(f"----- [ Début de l'analyse du dossier : {BASE_PATH} ] -----", end="\n\n")
@@ -83,8 +84,10 @@ for file in os.listdir(BASE_PATH):
             liste_pieces_detectees, img_valid_resize)
         # On retire les pieces trouvées qui ne sont pas des pièces
         nb_pieces_trouvees -= dico_bonne_p_detectee["unknown"]
-    if nb_pieces_trouvees == nb_pieces_reelles and nb_fausse_piece == 0 and len(liste_mauvaise_p_detectee) == 0:
-        traitement_reussite += 1
+    if nb_pieces_trouvees == nb_pieces_reelles and nb_fausse_piece == 0:
+        if len(liste_mauvaise_p_detectee) == 0:
+            reconnaissance_reussite += 1
+        detection_reussite += 1
 
     """ Affichage les résultats de la détection pour une image """
     functions.show_piece_analyse_result(nb_pieces_trouvees, nb_pieces_reelles, nb_fausse_piece,
@@ -93,8 +96,10 @@ for file in os.listdir(BASE_PATH):
 # Calcule des résultats quantitatifs finals
 print("\n----- [ Fin de la détection ! ] -----")
 if nb_image_total != 0:
-    pourcentage_final = round(traitement_reussite / nb_image_total * 100)
-    print(f"\nRésulat des analyses dans {BASE_PATH} : {traitement_reussite} / {nb_image_total}")
+    pourcentage_final = round(detection_reussite / nb_image_total * 100)
+    print(f"\nRésulat des analyses dans {BASE_PATH} :"
+          f"\n\tDétection : {detection_reussite} / {nb_image_total}"
+          f"\n\tReconnaissance : {reconnaissance_reussite} / {nb_image_total}")
 else:
     print("Aucun fichier image valide n'a été trouvé !")
 print("\n----- [ Fin de la détection ! ] -----")
