@@ -82,23 +82,8 @@ for file in os.listdir(BASE_PATH):
     if nb_pieces_trouvees == nb_pieces_reelles and nb_fausse_piece == 0 and len(liste_mauvaise_p_detectee) == 0:
         traitement_reussite += 1
 
-    """ Affichage des résultats de la détection des pièces """
-    total_p_detectee = 0
-    for p_detectee in dico_bonne_p_detectee.values():
-        total_p_detectee += p_detectee
-
-    pourcentage = "None" if nb_pieces_reelles == 0 else round(nb_pieces_trouvees / nb_pieces_reelles * 100)
-    pourcentage_reconnaissance = "None" if nb_pieces_reelles == 0 else round(total_p_detectee / nb_pieces_reelles * 100)
-
-    print(f"Traitement {file} : " +
-          f"\n\tNombre de pièce(s) détectée(s) : {nb_pieces_trouvees} sur {nb_pieces_reelles} ({pourcentage}%)" +
-          f" avec {nb_fausse_piece} faux positive." +
-          f"\n\tNombre de pièce(s) reconnue(s) : {total_p_detectee} sur {nb_pieces_reelles} ({pourcentage_reconnaissance}%) - (" +
-          f"{dico_bonne_p_detectee['1e']} * 1e ; {dico_bonne_p_detectee['2e']} * 2e ; "
-          f"{dico_bonne_p_detectee['centimes']} * pieces de [10, 20, 50]c ; "
-          f"{dico_bonne_p_detectee['petits_centimes']} * pieces de [1, 2, 5]c)")
-    if dico_bonne_p_detectee['inconnu'] != 0:
-        print(f"\n\tIl y a {dico_bonne_p_detectee['inconnu']} pièce(s) inconnu non comptabilisé.")
+    """ Affichage les résultats de la détection pour une image """
+    functions.show_piece_analyse_result(nb_pieces_trouvees, nb_pieces_reelles, nb_fausse_piece, dico_bonne_p_detectee)
 
 # Calcule des résultats quantitatifs finals
 if nb_image_total != 0:

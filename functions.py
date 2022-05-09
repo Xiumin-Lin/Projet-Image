@@ -513,6 +513,24 @@ def enter_images_path():
             print(f"'{base_choice}' n'est pas un choix invalide !\n")
 
 
+def show_piece_analyse_result(nb_pieces_trouvees, nb_pieces_reelles, nb_fausse_piece, dico_bonne_p_detectee):
+    total_p_reconnues = 0
+    for p_detectee in dico_bonne_p_detectee.values():
+        total_p_reconnues += p_detectee
+
+    pourcentage = "None" if nb_pieces_reelles == 0 else round(nb_pieces_trouvees / nb_pieces_reelles * 100)
+    pourcentage_reconnaissance = "None" if nb_pieces_reelles == 0 else round(total_p_reconnues / nb_pieces_reelles * 100)
+
+    print(f"\n\tNombre de pièce(s) détectée(s) : {nb_pieces_trouvees} sur {nb_pieces_reelles} ({pourcentage}%)" +
+          f" avec {nb_fausse_piece} faux positive." +
+          f"\n\tNombre de pièce(s) reconnue(s) : {total_p_reconnues} sur {nb_pieces_reelles} ({pourcentage_reconnaissance}%) - (" +
+          f"{dico_bonne_p_detectee['1e']} * 1e ; {dico_bonne_p_detectee['2e']} * 2e ; "
+          f"{dico_bonne_p_detectee['centimes']} * pieces de [10, 20, 50]c ; "
+          f"{dico_bonne_p_detectee['petits_centimes']} * pieces de [1, 2, 5]c)")
+    if dico_bonne_p_detectee['inconnu'] != 0:
+        print(f"\n\tIl y a {dico_bonne_p_detectee['inconnu']} pièce(s) inconnu non comptabilisé.")
+
+
 def convolution_diy(img, noyau):
     img_convolve = np.zeros((img.shape[0], img.shape[1], 1), dtype=np.uint8)
 
