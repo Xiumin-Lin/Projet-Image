@@ -69,7 +69,7 @@ for file in os.listdir(BASE_PATH):
     nb_pieces_reelles = len(json_util_data['pieces'])
     # Cherche si chaque pièce detectée est une vrai pièce
     nb_fausse_piece = 0
-    dico_bonne_p_detectee = {"1e": 0, "2e": 0, "centimes": 0, "petits_centimes": 0}
+    dico_bonne_p_detectee = {"1e": 0, "2e": 0, "centimes": 0, "petits_centimes": 0, "unknown": 0}
     liste_mauvaise_p_detectee = []
     if nb_pieces_trouvees != 0:
         # Récup l'image de validation
@@ -79,6 +79,8 @@ for file in os.listdir(BASE_PATH):
         img_valid_resize = functions.image_resize(img_validation, height=IMG_HEIGHT)
         # On calcule et recupere les erreurs d'analyse des images
         nb_fausse_piece, dico_bonne_p_detectee, liste_mauvaise_p_detectee = functions.calcul_erreur_analyse(liste_pieces_detectees, img_valid_resize)
+        # On retire les pieces trouvées qui ne sont pas des pièces
+        nb_pieces_trouvees -= dico_bonne_p_detectee["unknown"]
     if nb_pieces_trouvees == nb_pieces_reelles and nb_fausse_piece == 0 and len(liste_mauvaise_p_detectee) == 0:
         traitement_reussite += 1
 

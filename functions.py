@@ -223,52 +223,17 @@ def detection_de_pieces(img):
     img_gris = conversion_en_gris(img)
     # show_img(img_gris, "Gris")  # [LOG]
 
-    # TODO 2. Si historigramme de l'img est trop sombre ou trop clair, on égalise
-    # L'égalisation n'aide pas vraiment :/
-    # img_histo = historigramme(img_gris)
-    # img_egalise = egaliser(img_gris, img_histo)
-    # show_img(img_egalise, "Egalisé")  # [LOG]
-
-    # TODO 3. Réduire les bruits avec un lissage de l'image
-    # 3.a. Filtre Moyenneur
-    # img_lisse = filtre_moyenneur(img_egalise)
-    # 3.b. Filtre Median
+    # TODO 2. Réduire les bruits avec un lissage de l'image
+    # Filtre Median
     img_lisse = filtre_median(img_gris, 9)
     # show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
-    # 3.c. Filtre Gaussian
-    # img_lisse = filtre_gaussian(img_gris)
 
-    # TODO 4. Trouver le seuil adéquat et l'appliquer
-    # meilleur_seuil = otsu(img_lisse)
-    # img_binaire = seuillage(img_lisse, meilleur_seuil)
-    # ancien code
-    """# TODO 5. Detection de contour
-    # 5.a Filtre de Sobel
-    # img_result = filtre_sobel(img_dilate)
-    # 5.b Algo de Canny (le 3. et 4. est compris dedans)"""
-    # img_canny = algo_canny(img_lisse)
-    # show_img(img_canny, "Canny")  # [LOG]
-
-    # TODO 5.5 HOUGH_CIRCLE
+    # TODO 3 HOUGH_CIRCLE
     # Hough circle inclu déjà l'algo de canny
     img_ouvert = ouverture(img_lisse, 15)
     coords_cercles, img_hough = apply_hough(img_ouvert)
     # show_img(img_hough, "HOUGH")  # [LOG]
     img_result = img_hough
-
-    # TODO 6. Si les contours ne sont pas assez gros, le dilater
-    # img_dilate = dilatation(img_hough, 3)
-    # show_img(img_dilate, "Dilaté")  # [LOG]
-    # # cv2.imshow("dilat", img_dilate)
-    # img_result = img_dilate
-
-    # TODO 7. Compter les pieces
-    # nb_pieces, contours = compter_pieces(img_result)
-    #
-    # # Affichage des contours détectées  # [LOG]
-    # cv2.drawContours(img, contours, -1, (0, 255, 0), 2)
-    # # cv2.imshow("Result", img)
-    # # cv2.waitKey(0)
 
     nb_circle = len(coords_cercles[0])
     if nb_circle > 10:
@@ -279,9 +244,9 @@ def detection_de_pieces(img):
 def reconnaissance_de_valeur(img, cercles_coords):
     # TODO 1. Réduire les bruits avec un filtre median
     img_lisse = filtre_median(img, ksize=3)
-    # TODO 2. Convertir l'imge RGB en HSV
+    # TODO 2. Convertir l'image RGB en HSV
     img_hsv = cv2.cvtColor(img_lisse, cv2.COLOR_RGB2HSV)
-    # TODO 3. Recup la couleurs
+    # TODO 3. Recup l'image contenant qu les couleurs desirée (un orange et un rouge)
     img_filtree_orange = detect_colour(img_hsv, [15, 50, 20], [30, 255, 255])
     cv2.imshow("Mask orange", img_filtree_orange)  # [LOG]
     cv2.waitKey(0)
@@ -289,12 +254,11 @@ def reconnaissance_de_valeur(img, cercles_coords):
     cv2.imshow("Mask rouge", img_filtree_rouge)  # [LOG]
     cv2.waitKey(0)
     liste_pieces_detectees = []
+    # TODO 4. Attribuer la valeur de chaque piece via les img_filtree_orange et img_filtree_rouge obtenus
     for one_piece in cercles_coords:
         print("*", end='')
         piece_value = "unknown"
         pourcentage_orange = get_white_px_pourcentage_in_cercle(one_piece, img_filtree_orange)
-        # print(one_piece)
-        # print(pourcentage_orange)
         # le pourcentage de pixel orange sur la pièce est élévée (80%), alors c'est surement :
         if pourcentage_orange >= 80:  # 50, 20 ou 10 centime(s)
             piece_value = 0.5
@@ -307,21 +271,20 @@ def reconnaissance_de_valeur(img, cercles_coords):
             # On regarde le pourcentage de pixel orange sur la pièce dont la taille est reduite de 50%
             half_piece = [one_piece[0], one_piece[1], one_piece[2] // 2]
             pourcentage_half_orange = get_white_px_pourcentage_in_cercle(half_piece, img_filtree_orange)
-            # Si le pourcentage reste haute, alors c une pièce de 2e
+            # Si le pourcentage reste haut, alors c une pièce de 2e
             if pourcentage_half_orange >= 80:
                 piece_value = 2
             else:  # sinon c'est une pièce de 1 euro
                 piece_value = 1
-        # print("piece_value :", piece_value)
         liste_pieces_detectees.append({"coords": one_piece, "value": piece_value})
     print()
     return liste_pieces_detectees
 
 
 def detect_colour(img_hsv, lowrange, highrange):
-    hsv_color1 = np.asarray(lowrange)
-    hsv_color2 = np.asarray(highrange)
-    mask = cv2.inRange(img_hsv, hsv_color1, hsv_color2)
+    low_hsv_color = np.asarray(lowrange)
+    high_hsv_color = np.asarray(highrange)
+    mask = cv2.inRange(img_hsv, low_hsv_color, high_hsv_color)
     return mask
 
 
@@ -414,16 +377,17 @@ def create_validation_image(img, json_data):
 
 def calcul_erreur_analyse(liste_pieces_detectees, img_valid_resize):
     nb_fausse_piece = 0
-    dico_bonne_p_detectee = {"1e": 0, "2e": 0, "centimes": 0, "petits_centimes": 0, "inconnu": 0}
+    dico_bonne_p_detectee = {"1e": 0, "2e": 0, "centimes": 0, "petits_centimes": 0, "unknown": 0}
     liste_mauvaise_p_detectee = []
-    for une_piece in liste_pieces_detectees:
-        if une_piece["value"] == "unknown":
-            dico_bonne_p_detectee["inconnu"] += 1
+    # pour chaque pièce detectée
+    for p in liste_pieces_detectees:
+        # Si la valeur trouvée d'une pièce est unknown, on le note dans le dico et on passe à la pièce suivante
+        if p["value"] == "unknown":
+            dico_bonne_p_detectee["unknown"] += 1
             continue
-        p_coords = une_piece["coords"]
-        p_valeur = img_valid_resize[p_coords[1]][p_coords[0]]
-        print("valeur = ", une_piece["value"])
-        print(p_valeur)
+        p_coords = p["coords"]
+        p_valeur_reelle = img_valid_resize[p_coords[1]][p_coords[0]]
+        print(f"Valeur trouvée = {p['value']} vs valeur reelle {p_valeur_reelle}")  # [LOG]
         img_valid_seuil = seuillage(img_valid_resize, 200)
         pourcentage = get_white_px_pourcentage_in_cercle(p_coords, img_valid_seuil)
         # Si la piece trouvee ne correspond pas à la piece reelle à 70% près, alors cette piece n'est pas bonne
@@ -431,9 +395,9 @@ def calcul_erreur_analyse(liste_pieces_detectees, img_valid_resize):
             nb_fausse_piece += 1
         else:  # Sinon
             #
-            valeur_trouvee = une_piece["value"]
+            valeur_trouvee = p["value"]
             # Si la valeur réelle est divisible par 7 alors on s'attend que la valeur trouvée soit < 10 centimes
-            valeur_reelle = 255 - p_valeur
+            valeur_reelle = 255 - p_valeur_reelle
             if valeur_reelle % 7 == 0:
                 if valeur_trouvee < 0.10:
                     dico_bonne_p_detectee["petits_centimes"] += 1
@@ -515,8 +479,9 @@ def enter_images_path():
 
 def show_piece_analyse_result(nb_pieces_trouvees, nb_pieces_reelles, nb_fausse_piece, dico_bonne_p_detectee):
     total_p_reconnues = 0
-    for p_detectee in dico_bonne_p_detectee.values():
-        total_p_reconnues += p_detectee
+    for key in dico_bonne_p_detectee:
+        if key != "unknown":
+            total_p_reconnues += dico_bonne_p_detectee[key]
 
     pourcentage = "None" if nb_pieces_reelles == 0 else round(nb_pieces_trouvees / nb_pieces_reelles * 100)
     pourcentage_reconnaissance = "None" if nb_pieces_reelles == 0 else round(total_p_reconnues / nb_pieces_reelles * 100)
@@ -527,8 +492,8 @@ def show_piece_analyse_result(nb_pieces_trouvees, nb_pieces_reelles, nb_fausse_p
           f"{dico_bonne_p_detectee['1e']} * 1e ; {dico_bonne_p_detectee['2e']} * 2e ; "
           f"{dico_bonne_p_detectee['centimes']} * pieces de [10, 20, 50]c ; "
           f"{dico_bonne_p_detectee['petits_centimes']} * pieces de [1, 2, 5]c)")
-    if dico_bonne_p_detectee['inconnu'] != 0:
-        print(f"\n\tIl y a {dico_bonne_p_detectee['inconnu']} pièce(s) inconnu non comptabilisé.")
+    if dico_bonne_p_detectee['unknown'] != 0:
+        print(f"\n\tIl y a {dico_bonne_p_detectee['unknown']} pièce(s) unknown non comptabilisé.")
 
 
 def convolution_diy(img, noyau):
