@@ -32,7 +32,7 @@ for file in os.listdir(base_path):
         continue
     if filename[0] != "11":
         continue
-    print("Traitement : " + file)  # [LOG]
+    print(f"Traitement : {file} ")  # [LOG]
     nb_image_total += 1
 
     """ Récupére le json contenant les annotations """

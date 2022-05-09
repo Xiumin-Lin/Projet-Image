@@ -281,24 +281,36 @@ def reconnaissance_de_valeur(img, cercles_coords):
     # TODO 2. Convertir l'imge RGB en HSV
     img_hsv = cv2.cvtColor(img_lisse, cv2.COLOR_RGB2HSV)
     # TODO 3. Recup la couleurs
-    img_filtree_orange = detect_colour(img_hsv, [10, 50, 20], [30, 255, 255])
+    img_filtree_orange = detect_colour(img_hsv, [15, 50, 20], [30, 255, 255])
     cv2.imshow("Mask orange", img_filtree_orange)  # [LOG]
     cv2.waitKey(0)
-    img_filtree_rouge = detect_colour(img_hsv, [0, 50, 20], [9, 255, 255])
+    img_filtree_rouge = detect_colour(img_hsv, [0, 50, 20], [14, 255, 255])
     cv2.imshow("Mask rouge", img_filtree_rouge)  # [LOG]
     cv2.waitKey(0)
     liste_valeurs = []
     for one_piece in cercles_coords:
         piece_value = -1
-        px_blanc, px_total = get_white_px_in_cerlce(one_piece, img_filtree_orange)
-        if px_total != 0:
-            pourcentage_orange = (px_blanc / px_total) * 100
-            print(pourcentage_orange)
-            exit(0)
-            # if pourcentage_orange > 60
-            # elif pourcentage_orange >= 95:
-            #     piece_value =
-
+        pourcentage_orange = get_white_px_pourcentage_in_cercle(one_piece, img_filtree_orange)
+        print(one_piece)
+        print(pourcentage_orange)
+        # le pourcentage de pixel orange sur la pièce est élévée (80%), alors c'est surement :
+        if pourcentage_orange >= 80:  # 50, 20 ou 10 centime(s)
+            piece_value = 0.5
+        elif pourcentage_orange <= 15:  # si c'est inférieur à 15%
+            # On regarde le pourcentage de pixel rouge sur la pièce
+            pourcentage_rouge = get_white_px_pourcentage_in_cercle(one_piece, img_filtree_rouge)
+            if pourcentage_rouge >= 80:  # 5, 2 ou 1 centime(s)
+                piece_value = 0.05
+        else:
+            # On regarde le pourcentage de pixel orange sur la pièce dont la taille est reduite de 50%
+            half_piece = [one_piece[0], one_piece[1], one_piece[2] // 2]
+            pourcentage_half_orange = get_white_px_pourcentage_in_cercle(half_piece, img_filtree_orange)
+            # Si le pourcentage reste haute, alors c une pièce de 2e
+            if pourcentage_half_orange >= 80:
+                piece_value = 2
+            else:  # sinon c'est une pièce de 1 euro
+                piece_value = 1
+        print("piece_value :", piece_value)
         liste_valeurs.append({"coord": one_piece, "value": piece_value})
     return liste_valeurs
 
@@ -328,13 +340,13 @@ def show_img(img, img_title):
     plt.show()
 
 
-def get_white_px_in_cerlce(piece_coord, img):
+def get_white_px_pourcentage_in_cercle(piece_coord, img):
     """
     Retourne le nombre de pixel blanc et de pixel total de la pièce donnée en param.
     ---
     :param piece_coord les coordonnées de la pièce -> (x, y, rayon)
     :param img l'image contenant la pièce
-    :returns le nb de px blanc, le nb de px total dans la pièce
+    :returns le pourcentage de nb de px blanc dans le cercle
     """
     white_px = 0
     total_px = 0
@@ -346,8 +358,9 @@ def get_white_px_in_cerlce(piece_coord, img):
                 total_px += 1
                 if round(img[x, y]) == 255:
                     white_px += 1
-
-    return white_px, total_px
+    if total_px != 0:
+        return (white_px / total_px) * 100
+    return 0
 
 
 def load_jsonfile(json_path):
@@ -421,8 +434,8 @@ def calcul_nb_fausse_piece(cercles_coords, img_valid_resize):
     nb_fausse_piece = 0
 
     for une_piece in cercles_coords:
-        white_px, total_px = get_white_px_in_cerlce(une_piece, img_valid_resize)
-        if round(white_px / total_px * 100) < 70:
+        pourcentage = get_white_px_pourcentage_in_cercle(une_piece, img_valid_resize)
+        if round(pourcentage) < 70:
             nb_fausse_piece += 1
 
     return nb_fausse_piece
