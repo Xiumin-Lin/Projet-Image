@@ -43,7 +43,6 @@ def detection_de_pieces(img):
 def reconnaissance_de_valeur(img, cercles_coords):
     # TODO 1. Réduire les bruits avec un filtre median
     img_lisse = fltr.filtre_median(img, ksize=3)
-    show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
     # TODO 2. Convertir l'image RGB en HSV
     img_hsv = cv2.cvtColor(img_lisse, cv2.COLOR_RGB2HSV)
     # TODO 3. Recup l'image contenant qu les couleurs desirée (un orange et un rouge)
