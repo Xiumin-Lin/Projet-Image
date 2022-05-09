@@ -30,7 +30,7 @@ for file in os.listdir(base_path):
     """ Si le fichier n'est pas une image, on ne le traite pas """
     if file_extension not in valide_extension:
         continue
-    if filename[0] != "5":
+    if filename[0] != "11":
         continue
     print("Traitement : " + file)  # [LOG]
     nb_image_total += 1
@@ -64,8 +64,8 @@ for file in os.listdir(base_path):
     img_result, cercles_coords, nb_pieces_trouve = functions.detection_de_pieces(img_resize)
     functions.show_img(img_result, file + " après détection")  # [LOG]
 
-    """ Reconnaitre le côté de la piece et de sa valeur """
-    piece_number = functions.reconnaissance_de_face(img_resize, cercles_coords)
+    """ Reconnaitre la valeur de la piece """
+    piece_number = functions.reconnaissance_de_valeur(img_resize, cercles_coords)
 
     """ Calcul du résultat de la détection des pièces """
     nb_pieces_reelles = len(json_util_data['pieces'])
