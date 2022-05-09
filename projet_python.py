@@ -5,7 +5,7 @@ import matplotlib.image as mplimg
 import numpy as np
 
 import functions
-
+import traitement_util.util_misc as tutil
 
 # Enumère les différents type d'extension d'image """
 class ImageExtension(Enum):
@@ -54,13 +54,13 @@ for file in os.listdir(BASE_PATH):
     if file_extension == ImageExtension.PNG.value:
         multiplicateur = 255
     img_originale = (mplimg.imread(BASE_PATH + file).copy() * multiplicateur).astype(np.uint8)
-    img_resize = functions.image_resize(img_originale, height=IMG_HEIGHT)  # On réduit la taille l'image
-    functions.show_img(img_resize, "Image originale redimensionnée")  # [LOG]
+    img_resize = tutil.image_resize(img_originale, height=IMG_HEIGHT)  # On réduit la taille l'image
+    tutil.show_img(img_resize, "Image originale redimensionnée")  # [LOG]
 
     """ Détection des pièces """
     # Attention "nb_pieces_trouvees" peut être différent de "coord_find_cercle" s'il y a un trop grand nombre de pièce
     img_result, cercles_coords, nb_pieces_trouvees = functions.detection_de_pieces(img_resize)
-    functions.show_img(img_result, file + " après détection")  # [LOG]
+    tutil.show_img(img_result, file + " après détection")  # [LOG]
 
     """ Reconnaitre la valeur de la piece """
     liste_pieces_detectees = functions.reconnaissance_de_valeur(img_resize, cercles_coords)
@@ -74,9 +74,9 @@ for file in os.listdir(BASE_PATH):
     if nb_pieces_trouvees != 0:
         # Récup l'image de validation
         img_validation = functions.create_validation_image(img_originale, json_util_data)
-        functions.show_img(img_validation, "Image validation")  # [LOG]
+        tutil.show_img(img_validation, "Image validation")  # [LOG]
         # On réduit la taille de l'image
-        img_valid_resize = functions.image_resize(img_validation, height=IMG_HEIGHT)
+        img_valid_resize = tutil.image_resize(img_validation, height=IMG_HEIGHT)
         # On calcule et recupere les erreurs d'analyse des images
         nb_fausse_piece, dico_bonne_p_detectee, liste_mauvaise_p_detectee = functions.calcul_erreur_analyse(liste_pieces_detectees, img_valid_resize)
         # On retire les pieces trouvées qui ne sont pas des pièces
