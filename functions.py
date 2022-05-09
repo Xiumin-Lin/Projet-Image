@@ -280,12 +280,6 @@ def reconnaissance_de_valeur(img, cercles_coords):
     img_lisse = filtre_median(img, ksize=3)
     # TODO 2. Convertir l'imge RGB en HSV
     img_hsv = cv2.cvtColor(img_lisse, cv2.COLOR_RGB2HSV)
-    cv2.imshow("Mask avant égalisation", img_hsv)  # [LOG]
-    cv2.waitKey(0)
-    # TODO 2.5. Réduire les bruits avec un filtre median
-    img_hsv[:, :, 0] = cv2.equalizeHist(img_hsv[:, :, 0])
-    cv2.imshow("Mask apres égalisation", img_hsv)  # [LOG]
-    cv2.waitKey(0)
     # TODO 3. Recup la couleurs
     img_filtree_orange = detect_colour(img_hsv, [10, 50, 20], [30, 255, 255])
     cv2.imshow("Mask orange", img_filtree_orange)  # [LOG]
