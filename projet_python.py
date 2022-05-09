@@ -36,7 +36,7 @@ for file in os.listdir(BASE_PATH):
     """ Si le fichier n'est pas une image, on ne le traite pas """
     if file_extension not in valide_extension:
         continue
-    if filename[0] != "5":
+    if filename[0] != "11":
         continue
     print(f"Traitement : {file} ", end='')  # [LOG]
     nb_image_total += 1
@@ -87,10 +87,11 @@ for file in os.listdir(BASE_PATH):
         traitement_reussite += 1
 
     """ Affichage les résultats de la détection pour une image """
-    functions.show_piece_analyse_result(nb_pieces_trouvees, nb_pieces_reelles, nb_fausse_piece, dico_bonne_p_detectee,
-                                        liste_mauvaise_p_detectee)
+    functions.show_piece_analyse_result(nb_pieces_trouvees, nb_pieces_reelles, nb_fausse_piece,
+                                        dico_bonne_p_detectee, liste_mauvaise_p_detectee)
 
 # Calcule des résultats quantitatifs finals
+print("\n----- [ Fin de la détection ! ] -----")
 if nb_image_total != 0:
     pourcentage_final = round(traitement_reussite / nb_image_total * 100)
     print(f"\nRésulat des analyses dans {BASE_PATH} : {traitement_reussite} / {nb_image_total}")

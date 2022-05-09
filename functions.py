@@ -21,17 +21,18 @@ def show_img(img, img_title):
 def detection_de_pieces(img):
     # TODO 1. Convertir l'image en gris
     img_gris = tutil.conversion_en_gris(img)
-
+    show_img(img_gris, "Gris")  # [LOG]
     # TODO 2. Réduire les bruits avec un lissage de l'image
     # Filtre Median
     img_lisse = fltr.filtre_median(img_gris, 9)
-
+    show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
     # TODO 3 HOUGH_CIRCLE
     # Hough circle inclu déjà l'algo de canny
     img_ouvert = morph.ouverture(img_lisse, 15)
+    show_img(img_ouvert, "Ouverture")  # [LOG]
     coords_cercles, img_hough = tutil.apply_hough(img_ouvert)
     img_result = img_hough
-
+    show_img(img_hough, "HOUGH")  # [LOG]
     nb_circle = len(coords_cercles[0])
     if nb_circle > 10:
         nb_circle = 0
@@ -46,10 +47,10 @@ def reconnaissance_de_valeur(img, cercles_coords):
     img_hsv = cv2.cvtColor(img_lisse, cv2.COLOR_RGB2HSV)
     # TODO 3. Recup l'image contenant qu les couleurs desirée (un orange et un rouge)
     img_filtree_orange = tutil.detect_colour(img_hsv, [15, 50, 20], [30, 255, 255])
-    cv2.imshow("Mask orange", img_filtree_orange)  # [LOG]
+    # cv2.imshow("Mask orange", img_filtree_orange)  # [LOG]
     cv2.waitKey(0)
     img_filtree_rouge = tutil.detect_colour(img_hsv, [0, 50, 20], [14, 255, 255])
-    cv2.imshow("Mask rouge", img_filtree_rouge)  # [LOG]
+    # cv2.imshow("Mask rouge", img_filtree_rouge)  # [LOG]
     cv2.waitKey(0)
     liste_pieces_detectees = []
     # TODO 4. Attribuer la valeur de chaque piece via les img_filtree_orange et img_filtree_rouge obtenus
@@ -207,21 +208,33 @@ def show_piece_analyse_result(nb_trouvees, nb_reelles, nb_fausse_p, dico_bonne_p
     pourcentage = "None" if nb_reelles == 0 else round(nb_trouvees / nb_reelles * 100)
     pourcentage_recognize = "None" if nb_reelles == 0 else round(total_p_reconnues / nb_reelles * 100)
 
-    print(f"\tNombre de pièce(s) détectée(s) : {nb_trouvees} sur {nb_reelles} ({pourcentage}%)" +
-          f" avec {nb_fausse_p} faux positive." +
-          f"\n\tNombre de pièce(s) reconnue(s) : {total_p_reconnues} sur {nb_reelles} ({pourcentage_recognize}%)" +
-          f"{dico_bonne_p_detectee['1e']} * 1e ; {dico_bonne_p_detectee['2e']} * 2e ; "
-          f"{dico_bonne_p_detectee['centimes']} * pieces de [10, 20, 50]c ; "
-          f"{dico_bonne_p_detectee['petits_centimes']} * pieces de [1, 2, 5]c)")
-    if dico_bonne_p_detectee['unknown'] != 0:
-        print(f"\n\tIl y a {dico_bonne_p_detectee['unknown']} pièce(s) unknown non comptabilisé.")
+    """ Affichage sous forme d'un tableau """
+    # Piece detectée vraie et qui l'est
+    vrai_positif = nb_trouvees - nb_fausse_p
+    # Piece detectée vraie mais qui ne l'est pas
+    faux_positif = nb_fausse_p
+    # Piece detectée fausse mais qui est vrai
+    vrai_negatif = max(nb_reelles - nb_trouvees, 0)
+    # Piece dont l'algo a bien reconnue la valeur (approximativement)
+    vrai_positif_reconnues = total_p_reconnues
+    # Piece dont l'algo n'a bien reconnue la valeur
+    faux_positif_reconnues = len(liste_mauvaise_p_detectee)
+    print(f"Trouvé / Réel\t\t| Vraies pièces\t| Pièces invalides\t| Pourcentage " +
+          f"\nVraies pièces\t\t|\t\t{vrai_positif}\t\t|\t\t{faux_positif}\t\t\t|\t\t{pourcentage}" +
+          f"\nPièces invalides\t|\t\t{vrai_negatif}\t\t|" +
+          f"\nPièces reconnues\t|\t\t{vrai_positif_reconnues}\t\t|\t\t{faux_positif_reconnues}\t\t\t|\t\t{pourcentage_recognize}")
 
-    # vrai_positif = nb_pieces_trouvees - nb_fausse_piece
-    # faux_positif = nb_fausse_piece
-    # vrai_negatif = max(nb_pieces_reelles - nb_pieces_trouvees, 0)
-    # vrai_positif_reconnues = total_p_reconnues
-    # faux_positif_reconnues =
-    # print(f"Trouvé / Réel       | Vraies pièces   | Pièces invalides  | " +
-    #       f"Vraies pièces       | {vrai_positif}  | {faux_positif} | " +
-    #       f"Pièces invalides    | {vrai_negatif}  | ..." +
-    #       f"Pièces reconnues    | {total_p_reconnues} | ")
+    print(f"\n\t|  2e\t|  1e\t|  50c, 20c ou 10c\t|  5c, 2c ou 1c\t " +
+          f"\n\t|  {dico_bonne_p_detectee['2e']}\t|  {dico_bonne_p_detectee['1e']}\t|"
+          f"  {dico_bonne_p_detectee['centimes']}\t\t\t\t|  {dico_bonne_p_detectee['petits_centimes']}")
+
+    # Ancienne affichage
+    # print(f"\tNombre de pièce(s) détectée(s) : {nb_trouvees} sur {nb_reelles} ({pourcentage}%)" +
+    #       f" avec {nb_fausse_p} faux positive." +
+    #       f"\n\tNombre de pièce(s) reconnue(s) : {total_p_reconnues} sur {nb_reelles} ({pourcentage_recognize}%)" +
+    #       f"{dico_bonne_p_detectee['1e']} * 1e ; {dico_bonne_p_detectee['2e']} * 2e ; "
+    #       f"{dico_bonne_p_detectee['centimes']} * pieces de [10, 20, 50]c ; "
+    #       f"{dico_bonne_p_detectee['petits_centimes']} * pieces de [1, 2, 5]c)")
+    # if dico_bonne_p_detectee['unknown'] != 0:
+    #     print(f"\n\tIl y a {dico_bonne_p_detectee['unknown']} pièce(s) unknown non comptabilisé.")
+
