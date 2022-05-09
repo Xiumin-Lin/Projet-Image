@@ -74,10 +74,9 @@ def filtre_moyenneur(img):
     return img_moyenneur
 
 
-def filtre_median(img, size=3):
-    # TODO
+def filtre_median(img, ksize=3):
     # print("DO Filtre_median")  # [LOG]
-    img_median = cv2.medianBlur(img, ksize=size)
+    img_median = cv2.medianBlur(img, ksize=ksize)
     return img_median
 
 
@@ -246,20 +245,25 @@ def detection_de_pieces(img):
     return img_result, coords_cercles[0], nb_circle
 
 
-def piece_recognition(img_piece):
-    # TODO (Part 2) 1. Resize
-    img_piece_resize = image_resize(img_piece, height=200)
+def piece_recognition(piece_coord):
 
-    # TODO (Part 2) 2. Réduire les bruits avec un lissage de l'image
-    # Filtre Gaussian
-    img_lisse = filtre_gaussian(img_piece_resize, ksize=3)
-    # show_img(img_lisse, "Lissage avec filtre gaussian")  # [LOG]
+    # TODO 2. Réduire les bruits avec un lissage de l'image
+    # Filtre median
+    img_lisse = filtre_median(piece_coord, ksize=3)
+    show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
 
-    # TODO (Part 2) 3. Classifier les pieces selons leurs couleurs
-    img_filtree = detect_dominant_colour(img_lisse, (0, 0, 255), (30, 255, 255))
+    # TODO 3. Classifier les pieces selons leurs couleurs
+    img_filtree = detect_dominant_colour(img_lisse, [10, 50, 20], [30, 255, 255])
+    cv2.imshow("mask3.png", img_filtree)
+    cv2.waitKey(0)
+    return 0
 
-    img_result = img_filtree
-    return img_result
+
+def detect_dominant_colour(img_hsv, lowrange, highrange):
+    hsv_color1 = np.asarray(lowrange)
+    hsv_color2 = np.asarray(highrange)
+    mask = cv2.inRange(img_hsv, hsv_color1, hsv_color2)
+    return mask
 
 
 def apply_xor(img, other_img):
@@ -284,17 +288,6 @@ def cut_image_into_smaller_pieces(img, list_coords_pieces):
         m_i = (piece[1] - piece[2], piece[0] - piece[2], piece[2] * 2)
         array_mini_images.append(img[(m_i[0]):(m_i[0] + m_i[2]), (m_i[1]):(m_i[1] + m_i[2])])
     return array_mini_images
-
-
-def detect_dominant_colour(img, lowrange, highrange):
-    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    show_img(img_hsv, "Hsv")
-
-    hsv_color1 = np.asarray(lowrange)
-    hsv_color2 = np.asarray(highrange)
-    mask = cv2.inRange(img_hsv, hsv_color1, hsv_color2)
-
-    return mask
 
 
 def apply_hough(img_input):
@@ -421,40 +414,6 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     return resized
 
 
-def convolution_diy(img, noyau):
-    img_convolve = np.zeros((img.shape[0], img.shape[1], 1), dtype=np.uint8)
-
-    # Test que le noyeau est de (n x n) avec n impair
-    if (len(noyau) != len(noyau[1])) or (len(noyau) % 2 == 0):
-        return img_convolve
-
-    # normalisation du noyeau
-    centre_noyau = int((len(noyau) - 1) / 2)
-    moy_noyau = 0
-
-    for i in noyau:
-        for j in i:
-            moy_noyau += abs(j)
-    print(moy_noyau)
-
-    for pixelLine in range(len(img_convolve)):
-        for pixel in range(len(img_convolve[pixelLine])):
-            ie = 0
-            for ligneN in range(len(noyau) - 1):
-                for numLigneN in range(len(noyau[ligneN]) - 1):
-                    if (not (((pixel - (numLigneN - centre_noyau)) < 0) or (
-                            (pixelLine - (ligneN - centre_noyau)) < 0))):
-                        print(f"convolution de pixel {pixelLine}:{pixel}, "
-                              f"{(pixel - (ligneN - centre_noyau))}:{(pixelLine - (ligneN - centre_noyau))}")
-                        e = img[pixelLine - (ligneN - centre_noyau)][pixel - (numLigneN - centre_noyau)]
-
-                    else:
-                        print(f"pixel skippé: {pixelLine}{pixel}")
-            ie = ie / moy_noyau
-            img_convolve[pixelLine][pixel] = ie
-    return img_convolve
-
-
 def calcul_nb_fausse_piece(cercles_coords, img_valid_resize):
     nb_fausse_piece = 0
 
@@ -504,3 +463,37 @@ def enter_images_path():
             print(f"Le chemin '{path}' n'a pas été trouvé ! Peut-être essayer un chemin relatif.\n")
         else:
             print(f"'{base_choice}' n'est pas un choix invalide !\n")
+
+
+def convolution_diy(img, noyau):
+    img_convolve = np.zeros((img.shape[0], img.shape[1], 1), dtype=np.uint8)
+
+    # Test que le noyeau est de (n x n) avec n impair
+    if (len(noyau) != len(noyau[1])) or (len(noyau) % 2 == 0):
+        return img_convolve
+
+    # normalisation du noyeau
+    centre_noyau = int((len(noyau) - 1) / 2)
+    moy_noyau = 0
+
+    for i in noyau:
+        for j in i:
+            moy_noyau += abs(j)
+    print(moy_noyau)
+
+    for pixelLine in range(len(img_convolve)):
+        for pixel in range(len(img_convolve[pixelLine])):
+            ie = 0
+            for ligneN in range(len(noyau) - 1):
+                for numLigneN in range(len(noyau[ligneN]) - 1):
+                    if (not (((pixel - (numLigneN - centre_noyau)) < 0) or (
+                            (pixelLine - (ligneN - centre_noyau)) < 0))):
+                        print(f"convolution de pixel {pixelLine}:{pixel}, "
+                              f"{(pixel - (ligneN - centre_noyau))}:{(pixelLine - (ligneN - centre_noyau))}")
+                        e = img[pixelLine - (ligneN - centre_noyau)][pixel - (numLigneN - centre_noyau)]
+
+                    else:
+                        print(f"pixel skippé: {pixelLine}{pixel}")
+            ie = ie / moy_noyau
+            img_convolve[pixelLine][pixel] = ie
+    return img_convolve
