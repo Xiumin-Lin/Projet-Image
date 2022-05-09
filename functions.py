@@ -12,6 +12,12 @@ import numpy as np
 
 
 def show_img(img, img_title):
+    """
+    input img [numpy.array] : l'image a afficher
+    input img_title [String] : le titre de l'image
+
+    Affiche l'image donnée en param avec matplotlib
+    """
     plt.figure()
     plt.title(img_title)
     plt.imshow(img, cmap=plt.cm.gray)
@@ -19,17 +25,27 @@ def show_img(img, img_title):
 
 
 def detection_de_pieces(img):
+    """
+    input img [numpy.array]: image dont on veut extraire les pièces
+    output [numpy.array]: image affichant les pièces détectées par la fonction
+    output [liste de tuple]: liste contenant les coordonnées des cercles detectées par la fonctions -> (x, y, rayon)
+    output [int]: le nombre de cercle detectées
+
+    Chaîne d'opération utilisant la transformée de Hough pour les cercles
+    afin d'extraire tous les éléments circulaires de l'image donnée en paramètre, notamment des pièces.
+    """
     # TODO 1. Convertir l'image en gris
     img_gris = tutil.conversion_en_gris(img)
     # show_img(img_gris, "Gris")  # [LOG]
     # TODO 2. Réduire les bruits avec un lissage de l'image
     # Filtre Median
-    img_lisse = fltr.filtre_median(img_gris, 9)
+    img_lisse = fltr.filtre_median(img_gris, 9)  # masque de taille 9x9
     # show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
-    # TODO 3 HOUGH_CIRCLE
-    # Hough circle inclu déjà l'algo de canny
-    img_ouvert = morph.ouverture(img_lisse, 15)
+    # TODO 3 Ouverture pour éliminer au max les petites résidus et bruits
+    img_ouvert = morph.ouverture(img_lisse, 15)  # elem structurant de taille 15x15
     # show_img(img_ouvert, "Ouverture")  # [LOG]
+    # TODO 4 HOUGH_CIRCLE
+    # Hough circle inclu l'algo de canny
     coords_cercles, img_hough = tutil.apply_hough(img_ouvert)
     img_result = img_hough
     # show_img(img_hough, "HOUGH")  # [LOG]
@@ -41,6 +57,15 @@ def detection_de_pieces(img):
 
 
 def reconnaissance_de_valeur(img, cercles_coords):
+    """
+    input img [numpy.array]: image dont on veut extraire la valeur des pièces dont les coords sont données en param
+    input cercles_coords [liste de tuple]: liste contenant les coordonnées des pièces dont on veut extraire la valeur
+    output [list de dico]: liste stockant pour chaque pièce détectée leurs coords et de leur valeur.
+
+    Chaîne d'opération visant à récupérer les valeurs des pièces de monnaie (euro) dont les coords sont données en param.
+    Elle utilise la couleur des pièces de monnaie pour distinguer et attribuer les valeurs des pièces.
+    Si une pièce n'est pas reconnue, elle prendra la valeur "unknown".
+    """
     # TODO 1. Réduire les bruits avec un filtre median
     img_lisse = fltr.filtre_median(img, ksize=3)
     # TODO 2. Convertir l'image RGB en HSV
@@ -81,6 +106,12 @@ def reconnaissance_de_valeur(img, cercles_coords):
 
 
 def enter_images_path():
+    """
+    output [String]: le chemin indiqué par l'utilisateur.
+
+    Menu de console permettant à l'utilisateur de choisir le chemin menant au dossier contenant des images
+    à analyser.
+    """
     arg = ""
     if len(sys.argv) > 1:
         arg = sys.argv[1]
@@ -112,6 +143,13 @@ def enter_images_path():
 
 
 def load_jsonfile(json_path):
+    """
+    input json_path [String]: le chemin vers le fichier JSON à charger
+    output [dictionnaire]: les données des pièces contenues dans le JSON
+
+    Charge le JSON associé à l'image qui est en cours de traitement et retourne un dictionnaire
+    contenant les données des pièces présentes dans l'image.
+    """
     debut_label_piece = "piece de "
     file = open(json_path)
     data = json.load(file)
@@ -130,15 +168,31 @@ def load_jsonfile(json_path):
 
 
 def create_validation_image(img, json_data):
+    """
+    input img [numpy.array]: l'image original
+    input json_data [dictionnaire]: les données des pièces contenues dans le JSON
+    output [numpy.array]: l'image de validation
+
+    Crée une image modèle servant à valider les résultats de détection et de reconnaissance des pièces.
+    Cette image contient toutes les pièces de l'images avec leurs positions et leurs valeurs
+    """
     img_copy = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
     for piece in json_data["pieces"]:
         color_value = 255
+        # piece["value"] est un string indiquant la valeur de la pièce, exemple "1e" ou 50c"
         value_str = re.split("[e c]", piece["value"], 1)
+        # afin de retrouver la valeur coorespond à la pièce sur l'image de la validation, on donne une valeur
+        # spécifique au pixel composant la pièce :
+        # pour une pièce de 1e -> 255 - 1 = 254
+        # pour 2e   -> 255 - 2 = 253
+        # pour 50c  -> 255 - 50 = 205 (même logique pour 20c et 10c)
+        # pour 5c   -> 255 - (5 * 7) = 220 (même logique pour 2c et 1c)
         if piece["value"][-1] == 'e' or int(value_str[0]) > 5:
             color_value -= int(value_str[0])
         else:
-            color_value -= int(value_str[0]) * 7  # TODO bidoullage
+            color_value -= int(value_str[0]) * 7
 
+        # On ajoute les cercles sur l'image de validation
         if piece["shape_type"] == "circle":
             brut_center = piece["points"][0]
             brut_cercle_pt = piece["points"][1]
@@ -159,6 +213,15 @@ def create_validation_image(img, json_data):
 
 
 def calcul_erreur_analyse(liste_p_detectees, img_valid_resize):
+    """
+    input liste_p_detectees [list de dico]: liste stockant pour chaque pièce détectée leurs coords et de leur valeur.
+    input img_valid_resize [numpy.array]: l'image de validation redimensionnée à la même taille que l'image originale
+    output [int]: le nombre de pièces détecté qui sont faux positifs
+    output [dict[str,int]]: enregistre le nombre de pièces détecté et bien reconnues (avec la bonne valeur)
+    output [list de dico]: enregistre les pièces dont les valeurs ont été mal reconnues.
+
+    Calcule les erreur de detection et de reconnaissance des valeur pour une image
+    """
     nb_fausse_piece = 0
     dico_bonne_p_detectee = {"1e": 0, "2e": 0, "centimes": 0, "petits_centimes": 0, "unknown": 0}
     liste_mauvaise_p_detectee = []
@@ -200,6 +263,15 @@ def calcul_erreur_analyse(liste_p_detectees, img_valid_resize):
 
 
 def show_piece_analyse_result(nb_trouvees, nb_reelles, nb_fausse_p, dico_bonne_p_detectee, liste_mauvaise_p_detectee):
+    """
+    input nb_trouvees [int]: nombre de pièces trouvées par le programme sur l'image
+    input nb_reelles [int]: nombre de pièces réellement présentes sur l'image
+    input nb_fausse_p [int]: le nombre de pièces détecté qui sont faux positifs
+    input dico_bonne_p_detectee [dict[str,int]]: liste le nombre de pièces détecté et bien reconnues (avec la bonne valeur)
+    input liste_mauvaise_p_detectee [list de dico]: liste les pièces dont les valeurs ont été mal reconnues.
+
+    Affiche les résultats de détection et de reconnaissance de valeur des pièces pour une image.
+    """
     total_p_reconnues = 0
     for key in dico_bonne_p_detectee:
         if key != "unknown":
@@ -237,4 +309,3 @@ def show_piece_analyse_result(nb_trouvees, nb_reelles, nb_fausse_p, dico_bonne_p
     #       f"{dico_bonne_p_detectee['petits_centimes']} * pieces de [1, 2, 5]c)")
     # if dico_bonne_p_detectee['unknown'] != 0:
     #     print(f"\n\tIl y a {dico_bonne_p_detectee['unknown']} pièce(s) unknown non comptabilisé.")
-
