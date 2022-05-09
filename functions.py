@@ -4,14 +4,11 @@ import os.path
 import sys
 
 import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 import cv2
 import numpy as np
 
 
 def conversion_en_gris(img):
-    # print("DO Conversion en gris")  # [LOG]
-    # img_gris = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_gris = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
@@ -20,11 +17,12 @@ def conversion_en_gris(img):
             for k in range(3):
                 img_gris[i, j] = gray_value
 
+    # OU Version de CV2
+    # img_gris = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     return img_gris
 
 
 def historigramme(img):
-    # print("DO Historigramme")  # [LOG]
     histogram = np.zeros(256, dtype=np.uint8)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
@@ -34,7 +32,11 @@ def historigramme(img):
 
 
 def histo_cumule(histo):
-    # print("DO Historigramme cumulée")  # [LOG]
+    """
+    Retourne l'historigramme cummulé à partir d'un historigramme
+    :param histo un historigramme
+    :returns l'historigramme cummulé, le cumulé total des valeurs de l'histo
+    """
     h_cumul = np.zeros(len(histo))
     cumul = 0
     for i in range(len(histo)):
@@ -43,12 +45,16 @@ def histo_cumule(histo):
     return h_cumul, cumul
 
 
-# Egaliser
-def egaliser(img, historigrame):
-    # print("DO Egaliser")  # [LOG]
-    h_cumule, cumul = histo_cumule(historigrame)
+def egaliser(img, histo):
+    """
+    Opération d'égalisation de l'image donnée en param
+    :param img l'image à égaliser
+    :param histo l'historigramme de l'image
+    :return l'image égalisée
+    """
+    h_cumule, cumul = histo_cumule(histo)
     img_egalise = np.zeros(img.shape, dtype=np.uint8)
-    n = len(historigrame)
+    n = len(histo)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
             new_value = ((n / cumul) * h_cumule[img[i][j]]) - 1
@@ -60,60 +66,17 @@ def egaliser(img, historigrame):
     return img_egalise
 
 
-# Convolution avec un noyau à 2 dimensions
-def convolution_2d(img, noyau):
-    # print("DO Convolution 2D")  # [LOG]
-    img_convolve_2d = cv2.filter2D(img, ddepth=-1, kernel=noyau)
-    return img_convolve_2d
+def seuillage(img, seuil):
+    img_seuil = np.zeros(img.shape, dtype=np.uint8)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i, j] >= seuil:
+                img_seuil[i, j] = 255
+    return img_seuil
 
 
-def filtre_moyenneur(img):
-    # print("DO Filtre_moyenneur")  # [LOG]
-    moy_kernel_5x5 = np.ones((5, 5), np.uint8) / 25
-    img_moyenneur = convolution_2d(img, moy_kernel_5x5)
-    return img_moyenneur
-
-
-def filtre_median(img, ksize=3):
-    # print("DO Filtre_median")  # [LOG]
-    img_median = cv2.medianBlur(img, ksize=ksize)
-    return img_median
-
-
-def filtre_gaussian(img, ksize=17):
-    # print("DO Filtre_gaussian")  # [LOG]
-    # gaus_kernel_3x3 = np.asarray([[1, 2, 1],
-    #                               [2, 3, 2],
-    #                               [1, 2, 1], ], dtype=np.uint8) / 16
-    #
-    # gaus_kernel_5x5 = np.asarray([[1, 4, 5, 4, 1],
-    #                               [4, 16, 26, 16, 4],
-    #                               [7, 26, 41, 26, 7],
-    #                               [4, 16, 26, 16, 4],
-    #                               [1, 4, 5, 4, 1]], dtype=np.uint8) / 273
-
-    # img_gaussien = convolution_2d(img, gaus_kernel_5x5)
-    img_gaussien = cv2.GaussianBlur(img, (ksize, ksize), 0)
-    return img_gaussien
-
-
-def dilatation(img, ksize=3):
-    # print("DO Dilatation")  # [LOG]
-    elem_struct = np.ones((ksize, ksize), np.uint8)
-    img_dilate = cv2.dilate(img, elem_struct, iterations=3)
-    return img_dilate
-
-
-def erosion(img):
-    # print("DO Erosion")  # [LOG]
-    elem_struct = np.ones((3, 3), np.uint8)
-    img_dilate = cv2.erode(img, elem_struct, iterations=1)
-    return img_dilate
-
-
-# Seuillage automatique : Méthode Otsu (version du prof)
 def otsu(img):
-    # print("Use otsu : ")  # [LOG]
+    """ Seuillage automatique : Méthode Otsu (version du professeur Sylvain Lobry) """
     meilleur_seuil = 0
     minimun = 10_000_000_000
     histogram = historigramme(img)
@@ -155,32 +118,100 @@ def otsu(img):
     return meilleur_seuil
 
 
-def seuillage(img, seuil):
-    # print("DO Seuillage")  # [LOG]
-    img_seuil = np.zeros(img.shape, dtype=np.uint8)
-    for i in range(img.shape[0]):
-        for j in range(img.shape[1]):
-            if img[i, j] >= seuil:
-                img_seuil[i, j] = 255
-    return img_seuil
+def convolution_2d(img, noyau):
+    """ Convolution avec un noyau à 2 dimensions """
+    img_convolve_2d = cv2.filter2D(img, ddepth=-1, kernel=noyau)
+    return img_convolve_2d
+
+
+def filtre_moyenneur(img):
+    moy_kernel_5x5 = np.ones((5, 5), np.uint8) / 25
+    img_moyenneur = convolution_2d(img, moy_kernel_5x5)
+    return img_moyenneur
+
+
+def filtre_median(img, ksize=3):
+    img_median = cv2.medianBlur(img, ksize=ksize)
+    return img_median
+
+
+def filtre_gaussian(img, ksize=17):
+    # gaus_kernel_3x3 = np.asarray([[1, 2, 1],
+    #                               [2, 3, 2],
+    #                               [1, 2, 1], ], dtype=np.uint8) / 16
+    #
+    # gaus_kernel_5x5 = np.asarray([[1, 4, 5, 4, 1],
+    #                               [4, 16, 26, 16, 4],
+    #                               [7, 26, 41, 26, 7],
+    #                               [4, 16, 26, 16, 4],
+    #                               [1, 4, 5, 4, 1]], dtype=np.uint8) / 273
+    # img_gaussien = convolution_2d(img, gaus_kernel_5x5)
+
+    img_gaussien = cv2.GaussianBlur(img, (ksize, ksize), 0)
+    return img_gaussien
+
+
+def dilatation(img, ksize=3):
+    elem_struct = np.ones((ksize, ksize), np.uint8)
+    img_dilate = cv2.dilate(img, elem_struct, iterations=3)
+    return img_dilate
+
+
+def erosion(img):
+    elem_struct = np.ones((3, 3), np.uint8)
+    img_dilate = cv2.erode(img, elem_struct, iterations=1)
+    return img_dilate
+
+
+def ouverture(img, size=3):
+    return cv2.morphologyEx(img, cv2.MORPH_OPEN, np.ones((size, size), np.uint8))
 
 
 def filtre_sobel(img):
-    # print("DO Filtre_sobel")  # [LOG]
     img_sobel = cv2.Sobel(img, ddepth=-1, dx=1, dy=1, ksize=1)
     return img_sobel
 
 
 def algo_canny(img):
-    # print("DO Algo_canny")  # [LOG]
     meilleur_seuil = otsu(img)
     img_contour = cv2.Canny(img, 50, meilleur_seuil)
     return img_contour
 
 
+def apply_hough(img_input):
+    """ Applique Hough Cercle """
+    rows = img_input.shape[0]
+    coords_cercles = cv2.HoughCircles(img_input, cv2.HOUGH_GRADIENT, 1, rows / 8,
+                                      param1=100, param2=30,
+                                      minRadius=1, maxRadius=1000)
+    img_hough = None
+    if coords_cercles is not None:
+        coords_cercles = np.uint16(np.around(coords_cercles))  # ne pas changer le uint16
+        for i in coords_cercles[0, :]:
+            center = (i[0], i[1])
+            # circle center
+            cv2.circle(img_input, center, 1, (0, 100, 100), 3)
+            # circle outline
+            radius = i[2]
+            img_hough = cv2.circle(img_input, center, radius, (255, 0, 0), 3)
+    else:
+        # Si 0 cercle detecté, alors on retourne l'img original + une liste vide de coords de cercle
+        img_hough = img_input
+        coords_cercles = [[]]
+
+    return coords_cercles, img_hough
+
+
+def apply_xor(img, other_img):
+    img_xor = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i][j] != other_img[i][j]:
+                img_xor[i][j] = 255
+    return img_xor
+
+
 def compter_pieces(img):
-    # TODO : Faire notre propre detection de cercle
-    # print("DO Compter_pieces")  # [LOG]
     (contours_piece, _) = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     return len(contours_piece), contours_piece
@@ -190,7 +221,6 @@ def detection_de_pieces(img):
     # TODO 1. Convertir l'image en gris
     img_gris = conversion_en_gris(img)
     # show_img(img_gris, "Gris")  # [LOG]
-    # show_img(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), "Gris by cv2")  # [LOG]
 
     # TODO 2. Si historigramme de l'img est trop sombre ou trop clair, on égalise
     # L'égalisation n'aide pas vraiment :/
@@ -245,38 +275,26 @@ def detection_de_pieces(img):
     return img_result, coords_cercles[0], nb_circle
 
 
-def piece_recognition(piece_coord):
-
-    # TODO 2. Réduire les bruits avec un lissage de l'image
-    # Filtre median
-    img_lisse = filtre_median(piece_coord, ksize=3)
-    show_img(img_lisse, "Lissage avec filtre median")  # [LOG]
-
-    # TODO 3. Classifier les pieces selons leurs couleurs
-    img_filtree = detect_dominant_colour(img_lisse, [10, 50, 20], [30, 255, 255])
+def reconnaissance_de_face(img, cercles_coords):
+    # TODO 1. Réduire les bruits avec un filtre median
+    img_lisse = filtre_median(img, ksize=3)
+    # TODO 2. Convertir l'imge RGB en HSV
+    img_hsv = cv2.cvtColor(img_lisse, cv2.COLOR_RGB2HSV)
+    # TODO 3. Recup la couleurs
+    img_filtree = detect_colour(img_hsv, [10, 50, 20], [30, 255, 255])
     cv2.imshow("mask3.png", img_filtree)
     cv2.waitKey(0)
-    return 0
+    # list_pieces = cut_image_into_smaller_pieces(img_hsv, cercles_coords) A DELETE
+    for one_piece in cercles_coords:
+        piece_number = 0
+        print("piece_number = ", piece_number)
 
 
-def detect_dominant_colour(img_hsv, lowrange, highrange):
+def detect_colour(img_hsv, lowrange, highrange):
     hsv_color1 = np.asarray(lowrange)
     hsv_color2 = np.asarray(highrange)
     mask = cv2.inRange(img_hsv, hsv_color1, hsv_color2)
     return mask
-
-
-def apply_xor(img, other_img):
-    img_xor = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
-    for i in range(img.shape[0]):
-        for j in range(img.shape[1]):
-            if img[i][j] != other_img[i][j]:
-                img_xor[i][j] = 255
-    return img_xor
-
-
-def ouverture(img, size=3):
-    return cv2.morphologyEx(img, cv2.MORPH_OPEN, np.ones((size, size), np.uint8))
 
 
 def cut_image_into_smaller_pieces(img, list_coords_pieces):
@@ -290,34 +308,33 @@ def cut_image_into_smaller_pieces(img, list_coords_pieces):
     return array_mini_images
 
 
-def apply_hough(img_input):
-    rows = img_input.shape[0]
-    coords_cercles = cv2.HoughCircles(img_input, cv2.HOUGH_GRADIENT, 1, rows / 8,
-                                      param1=100, param2=30,
-                                      minRadius=1, maxRadius=1000)
-    img_hough = None
-    if coords_cercles is not None:
-        coords_cercles = np.uint16(np.around(coords_cercles))  # ne pas changer le uint16
-        for i in coords_cercles[0, :]:
-            center = (i[0], i[1])
-            # circle center
-            cv2.circle(img_input, center, 1, (0, 100, 100), 3)
-            # circle outline
-            radius = i[2]
-            img_hough = cv2.circle(img_input, center, radius, (255, 0, 0), 3)
-    else:
-        # Si 0 cercle detecté, alors on retourne l'img original + une liste vide de coords de cercle
-        img_hough = img_input
-        coords_cercles = [[]]
-
-    return coords_cercles, img_hough
-
-
 def show_img(img, img_title):
     plt.figure()
     plt.title(img_title)
     plt.imshow(img, cmap=plt.cm.gray)
     plt.show()
+
+
+def get_white_px_in_cerlce(piece_coord, img):
+    """
+    Retourne le nombre de pixel blanc et de pixel total de la pièce donnée en param.
+    ---
+    :param piece_coord les coordonnées de la pièce -> (x, y, rayon)
+    :param img l'image contenant la pièce
+    :returns le nb de px blanc, le nb de px total dans la pièce
+    """
+    white_px = 0
+    total_px = 0
+    centre = [piece_coord[1], piece_coord[0]]
+    rayon = piece_coord[2]
+    for x in range(img.shape[0]):
+        for y in range(img.shape[1]):
+            if np.sqrt((centre[0] - x)**2 + (centre[1] - y)**2) <= rayon:
+                total_px += 1
+                if round(img[x, y]) == 255:
+                    white_px += 1
+
+    return white_px, total_px
 
 
 def load_jsonfile(json_path):
@@ -357,53 +374,26 @@ def create_validation_image(img, json_data):
     return img_copy
 
 
-def get_file(prefix):
-    # multiplicateur = 1 pour afficher une img .jpeg ou jpg dans sa couleur d'origine
-    # multiplicateur = 255 pour afficher une img .png dans sa couleur d'origine
-    multiplicateur = 1
-    filename = ""
-    file_location = "./res/" + str(prefix)
-    if os.path.isfile(file_location + ".jpeg"):
-        filename = str(prefix) + ".jpeg"
-    elif os.path.isfile(file_location + ".jpg"):
-        filename = str(prefix) + ".jpg"
-    elif os.path.isfile(file_location + ".png"):
-        filename = str(prefix) + ".png"
-        multiplicateur = 255
-    elif prefix == "-help":
-        # TODO
-        exit()
-    else:
-        print("il n'y a pas de fichier " + str(prefix)
-              + " .jpg, .jpeg ou .png, utilisez le program avec '-help' pour un detail d'utilisation")
-        exit()
-    return filename, multiplicateur
-
-
-# Fonction pour redimension d'une image sans perdre son allure d'origine
-# Source : https://stackoverflow.com/questions/44650888/resize-an-image-without-distortion-opencv
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
-    # initialize the dimensions of the image to be resized and
-    # grab the image size
+    """
+    Fonction pour redimension d'une image sans perdre son allure d'origine
+    Source : https://stackoverflow.com/questions/44650888/resize-an-image-without-distortion-opencv
+    """
+    # initialize the dimensions of the image to be resized and grab the image size
     dim = None
     (h, w) = image.shape[:2]
 
-    # if both the width and height are None, then return the
-    # original image
+    # if both the width and height are None, then return the original image
     if width is None and height is None:
         return image
 
     # check to see if the width is None
     if width is None:
-        # calculate the ratio of the height and construct the
-        # dimensions
+        # calculate the ratio of the height and construct the dimensions
         r = height / float(h)
         dim = (int(w * r), height)
-
-    # otherwise, the height is None
+    # otherwise, the height is None, calculate the ratio of the width and construct the dimensions
     else:
-        # calculate the ratio of the width and construct the
-        # dimensions
         r = width / float(w)
         dim = (width, int(h * r))
 
@@ -417,17 +407,8 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
 def calcul_nb_fausse_piece(cercles_coords, img_valid_resize):
     nb_fausse_piece = 0
 
-    for piece in cercles_coords:
-        white_px = 0
-        total_px = 0
-        centre = [piece[1], piece[0]]
-        rayon = piece[2]
-        for x in range(img_valid_resize.shape[0]):
-            for y in range(img_valid_resize.shape[1]):
-                if np.sqrt((centre[0] - x)**2 + (centre[1] - y)**2) <= rayon:
-                    total_px += 1
-                    if round(img_valid_resize[x, y]) == 255:
-                        white_px += 1
+    for une_piece in cercles_coords:
+        white_px, total_px = get_white_px_in_cerlce(une_piece, img_valid_resize)
         if round(white_px / total_px * 100) < 70:
             nb_fausse_piece += 1
 

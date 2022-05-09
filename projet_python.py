@@ -1,8 +1,6 @@
 import os
 from enum import Enum
 
-import cv2
-import matplotlib.pyplot as plt
 import matplotlib.image as mplimg
 import numpy as np
 
@@ -32,7 +30,7 @@ for file in os.listdir(base_path):
     """ Si le fichier n'est pas une image, on ne le traite pas """
     if file_extension not in valide_extension:
         continue
-    if filename[0] != "1":
+    if filename[0] != "5":
         continue
     print("Traitement : " + file)  # [LOG]
     nb_image_total += 1
@@ -67,12 +65,7 @@ for file in os.listdir(base_path):
     functions.show_img(img_result, file + " après détection")  # [LOG]
 
     """ Reconnaitre le côté de la piece et de sa valeur """
-    # Pour chaque cercle detecté, on l'extrait de l'image resize
-    img_hsv = cv2.cvtColor(img_resize, cv2.COLOR_RGB2HSV)
-    list_pieces = functions.cut_image_into_smaller_pieces(img_hsv, cercles_coords)
-    for one_piece in list_pieces:
-        piece_number = functions.piece_recognition(one_piece)
-        print("piece_number = ", piece_number)
+    piece_number = functions.reconnaissance_de_face(img_resize, cercles_coords)
 
     """ Calcul du résultat de la détection des pièces """
     nb_pieces_reelles = len(json_util_data['pieces'])
