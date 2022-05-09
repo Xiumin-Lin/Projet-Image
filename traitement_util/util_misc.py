@@ -193,7 +193,7 @@ def apply_xor(img, other_img):
     """
     input: une [numpy.array] de la premiere image pour laquelle il faut appliquer xor
     input: une [numpy.array] de la deuxieme image pour laquelle il faut appliquer xor
-    output: input: une [numpy.array] de l'image resultante du xor
+    output: une [numpy.array] de l'image resultante du xor
 
     retournes image1 XOR image2 
     """
@@ -207,6 +207,15 @@ def apply_xor(img, other_img):
 
 
 def detect_colour(img_hsv, lowrange, highrange):
+    """
+    input: une [numpy.array] de la premiere image pour laquelle il faut detecter les contours
+    input: un [int] de la valeure basse
+    input: un [int] de la valeure haute
+
+    output: un masque [numpy.array]
+
+    retournes image1 XOR image2 
+    """
     low_hsv_color = np.asarray(lowrange)
     high_hsv_color = np.asarray(highrange)
     mask = cv2.inRange(img_hsv, low_hsv_color, high_hsv_color)
@@ -255,6 +264,12 @@ def cut_image_into_smaller_pieces(img, list_coords_pieces):
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     """
+    input: une [numpy.array] de l'image a resize
+    input: [int] de la largeure de la deuxieme image
+    input:
+    input:
+    output:une [numpy.array] de l'image resized
+
     Fonction pour redimensionner une image sans perdre son allure d'origine
     Source : https://stackoverflow.com/questions/44650888/resize-an-image-without-distortion-opencv
     """
