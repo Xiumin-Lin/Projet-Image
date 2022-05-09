@@ -1,6 +1,7 @@
 import os
 import json
 import os.path
+import re
 import sys
 
 import matplotlib.pyplot as plt
@@ -287,12 +288,13 @@ def reconnaissance_de_valeur(img, cercles_coords):
     img_filtree_rouge = detect_colour(img_hsv, [0, 50, 20], [14, 255, 255])
     cv2.imshow("Mask rouge", img_filtree_rouge)  # [LOG]
     cv2.waitKey(0)
-    liste_valeurs = []
+    liste_pieces_detectees = []
     for one_piece in cercles_coords:
-        piece_value = -1
+        print("*", end='')
+        piece_value = "unknown"
         pourcentage_orange = get_white_px_pourcentage_in_cercle(one_piece, img_filtree_orange)
-        print(one_piece)
-        print(pourcentage_orange)
+        # print(one_piece)
+        # print(pourcentage_orange)
         # le pourcentage de pixel orange sur la pièce est élévée (80%), alors c'est surement :
         if pourcentage_orange >= 80:  # 50, 20 ou 10 centime(s)
             piece_value = 0.5
@@ -310,9 +312,10 @@ def reconnaissance_de_valeur(img, cercles_coords):
                 piece_value = 2
             else:  # sinon c'est une pièce de 1 euro
                 piece_value = 1
-        print("piece_value :", piece_value)
-        liste_valeurs.append({"coord": one_piece, "value": piece_value})
-    return liste_valeurs
+        # print("piece_value :", piece_value)
+        liste_pieces_detectees.append({"coords": one_piece, "value": piece_value})
+    print()
+    return liste_pieces_detectees
 
 
 def detect_colour(img_hsv, lowrange, highrange):
@@ -371,7 +374,9 @@ def load_jsonfile(json_path):
     liste_autres = []  # les choses qui ne sont pas des pièces de monnaie
     for shape in data["shapes"]:
         if shape["label"].startswith(debut_label_piece):
-            liste_pieces.append({"label": shape["label"], "points": shape["points"], "shape_type": shape["shape_type"]})
+            value_str = shape["label"].split(debut_label_piece)[1]
+            value = re.split(" ", value_str, 1)[0]
+            liste_pieces.append({"label": shape["label"], "value": value, "points": shape["points"], "shape_type": shape["shape_type"]})
         else:
             liste_autres.append({"label": shape["label"], "points": shape["points"]})
     util_data = {'pieces': liste_pieces, 'autres': liste_autres}
@@ -381,6 +386,13 @@ def load_jsonfile(json_path):
 def create_validation_image(img, json_data):
     img_copy = np.zeros([img.shape[0], img.shape[1], 1], dtype=np.uint8)
     for piece in json_data["pieces"]:
+        color_value = 255
+        value_str = re.split("[e c]", piece["value"], 1)
+        if piece["value"][-1] == 'e' or int(value_str[0]) > 5:
+            color_value -= int(value_str[0])
+        else:
+            color_value -= int(value_str[0]) * 7  # TODO bidoullage
+
         if piece["shape_type"] == "circle":
             brut_center = piece["points"][0]
             brut_cercle_pt = piece["points"][1]
@@ -389,15 +401,55 @@ def create_validation_image(img, json_data):
             cercle_pt = (int(brut_cercle_pt[0]), int(brut_cercle_pt[1]))
 
             rayon = int(np.sqrt((center[0] - cercle_pt[0])**2 + (center[1] - cercle_pt[1])**2))
-            cv2.circle(img_copy, center, rayon, (255, 255, 255), -10)
+            cv2.circle(img_copy, center, rayon, color_value, -10)
         elif piece["shape_type"] == "polygon":
             list_pts = []
             for points in piece["points"]:
                 list_pts.append([int(points[0]), int(points[1])])
             pts = np.array([list_pts], np.int32)  # ne pas changer le int32
-            cv2.fillPoly(img_copy, [pts], 255)
+            cv2.fillPoly(img_copy, [pts], color_value)
 
     return img_copy
+
+
+def calcul_erreur_analyse(liste_pieces_detectees, img_valid_resize):
+    nb_fausse_piece = 0
+    dico_bonne_p_detectee = {"1e": 0, "2e": 0, "centimes": 0, "petits_centimes": 0, "inconnu": 0}
+    liste_mauvaise_p_detectee = []
+    for une_piece in liste_pieces_detectees:
+        if une_piece["value"] == "unknown":
+            dico_bonne_p_detectee["inconnu"] += 1
+            continue
+        p_coords = une_piece["coords"]
+        p_valeur = img_valid_resize[p_coords[1]][p_coords[0]]
+        print("valeur = ", une_piece["value"])
+        print(p_valeur)
+        img_valid_seuil = seuillage(img_valid_resize, 200)
+        pourcentage = get_white_px_pourcentage_in_cercle(p_coords, img_valid_seuil)
+        # Si la piece trouvee ne correspond pas à la piece reelle à 70% près, alors cette piece n'est pas bonne
+        if round(pourcentage) < 70:
+            nb_fausse_piece += 1
+        else:  # Sinon
+            #
+            valeur_trouvee = une_piece["value"]
+            # Si la valeur réelle est divisible par 7 alors on s'attend que la valeur trouvée soit < 10 centimes
+            valeur_reelle = 255 - p_valeur
+            if valeur_reelle % 7 == 0:
+                if valeur_trouvee < 0.10:
+                    dico_bonne_p_detectee["petits_centimes"] += 1
+                else:
+                    liste_mauvaise_p_detectee.append({"find": valeur_trouvee, "real": valeur_reelle})
+            elif valeur_reelle % 10 == 0:
+                if 0.50 >= valeur_trouvee >= 0.10:
+                    dico_bonne_p_detectee["centimes"] += 1
+                else:
+                    liste_mauvaise_p_detectee.append({"find": valeur_trouvee, "real": valeur_reelle})
+            elif valeur_reelle == valeur_trouvee and valeur_trouvee >= 1:
+                dico_bonne_p_detectee[f"{valeur_trouvee}e"] += 1
+            else:
+                liste_mauvaise_p_detectee.append({"find": valeur_trouvee, "real": valeur_reelle})
+
+    return nb_fausse_piece, dico_bonne_p_detectee, liste_mauvaise_p_detectee
 
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
@@ -428,17 +480,6 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
 
     # return the resized image
     return resized
-
-
-def calcul_nb_fausse_piece(cercles_coords, img_valid_resize):
-    nb_fausse_piece = 0
-
-    for une_piece in cercles_coords:
-        pourcentage = get_white_px_pourcentage_in_cercle(une_piece, img_valid_resize)
-        if round(pourcentage) < 70:
-            nb_fausse_piece += 1
-
-    return nb_fausse_piece
 
 
 def enter_images_path():
